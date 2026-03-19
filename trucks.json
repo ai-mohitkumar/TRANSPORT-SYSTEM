@@ -1,1 +1,22 @@
-[]
+[
+    {
+        "id": "ae3e3577-95a3-4e7b-8205-d48e527ecbce",
+        "number": "BR44D8622",
+        "model": "",
+        "capacity": 0.0,
+        "status": "Busy",
+        "total_trips": 0,
+        "total_earnings": 0.0,
+        "added_at": "2026-03-20T01:22:12.480420"
+    },
+    {
+        "id": "21a755af-8122-46e3-ba38-26853b78c0e7",
+        "number": "BR44D8623",
+        "model": "tata",
+        "capacity": 5.0,
+        "status": "Available",
+        "total_trips": 0,
+        "total_earnings": 0.0,
+        "added_at": "2026-03-20T01:24:47.479450"
+    }
+]

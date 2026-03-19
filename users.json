@@ -1,0 +1,15 @@
+[
+    {
+        "id": "f8054719-79ba-47d3-92be-9a62307154a9",
+        "username": "Mohit@2007",
+        "password": "7e071fd9b023ed8f18458a73613a0834f6220bd5cc50357ba3493c6040a9ea8c",
+        "name": "Mohit Kumar",
+        "email": "mohitkumarpradhan1234567@gmail.com",
+        "phone": "07970880676",
+        "role": "driver",
+        "truck_number": "br44d8622",
+        "created_at": "2026-03-20T01:22:50.655668",
+        "last_login": null,
+        "is_active": true
+    }
+]
