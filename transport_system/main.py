@@ -2218,13 +2218,6 @@ def main_menu():
             print("Invalid choice. Try again.")
 
 if __name__ == "__main__":
-    # Check if running as web app or CLI
-    import sys
-    if len(sys.argv) > 1 and sys.argv[1] == 'web':
-        print("🚀 Starting KALAWATI TRANSPORT Web App...")
-        print("📱 Open your browser and go to: http://localhost:5000")
-        app.run(debug=True, host='0.0.0.0', port=5000)
-    else:
-        # Run CLI version
-        main_menu()
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
 
