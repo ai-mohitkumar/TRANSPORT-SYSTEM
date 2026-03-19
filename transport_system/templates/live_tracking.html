@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}Live Tracking - KALAWATI TRANSPORT{% endblock %}
+
+{% block head %}
+{{ super() }}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+    #map {
+        height: 600px;
+        width: 100%;
+        border-radius: 8px;
+    }
+    .truck-marker {
+        background-color: #007bff;
+        border: 2px solid white;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    .truck-popup {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .status-online {
+        color: #28a745;
+    }
+    .status-offline {
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-map-marker-alt me-2"></i>Live Truck Tracking
+                    </h4>
+                    <button class="btn btn-light btn-sm" onclick="refreshMap()">
+                        <i class="fas fa-sync-alt me-1"></i>Refresh
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="map"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2"></i>Active Trucks
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Truck Number</th>
+                                    <th>Driver</th>
+                                    <th>Status</th>
+                                    <th>Last Location</th>
+                                    <th>Last Update</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for driver in active_drivers %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ driver.truck.number }}</strong>
+                                    </td>
+                                    <td>{{ driver.user.name }}</td>
+                                    <td>
+                                        {% if driver.user.last_location %}
+                                            <span class="badge bg-success">Online</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Offline</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if driver.user.last_location %}
+                                            {{ "%.4f"|format(driver.user.last_location.latitude) }}, {{ "%.4f"|format(driver.user.last_location.longitude) }}
+                                        {% else %}
+                                            No location data
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if driver.user.last_location %}
+                                            {{ driver.user.last_location.timestamp[:19] }}
+                                        {% else %}
+                                            Never
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('location_history', truck_number=driver.truck.number) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-history me-1"></i>History
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let map;
+let markers = {};
+
+document.addEventListener('DOMContentLoaded', function() {
+    initializeMap();
+    loadTruckLocations();
+    // Refresh every 30 seconds
+    setInterval(loadTruckLocations, 30000);
+});
+
+function initializeMap() {
+    // Default center (can be changed to your business location)
+    map = L.map('map').setView([28.6139, 77.2090], 10); // Delhi coordinates as default
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+}
+
+function loadTruckLocations() {
+    // Load locations for all active trucks
+    {% for driver in active_drivers %}
+    fetch('/get_locations/{{ driver.truck.number }}')
+        .then(response => response.json())
+        .then(data => {
+            if (data.length > 0) {
+                const latest = data[data.length - 1];
+                updateTruckMarker('{{ driver.truck.number }}', latest);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading locations for {{ driver.truck.number }}:', error);
+        });
+    {% endfor %}
+}
+
+function updateTruckMarker(truckNumber, location) {
+    // Remove existing marker
+    if (markers[truckNumber]) {
+        map.removeLayer(markers[truckNumber]);
+    }
+
+    // Add new marker
+    const marker = L.marker([location.latitude, location.longitude])
+        .addTo(map)
+        .bindPopup(`
+            <div class="truck-popup">
+                <strong>Truck: ${location.truck_number}</strong><br>
+                Driver: ${location.driver_name}<br>
+                Speed: ${location.speed} km/h<br>
+                Last Update: ${new Date(location.timestamp).toLocaleString()}
+            </div>
+        `);
+
+    markers[truckNumber] = marker;
+
+    // Fit map to show all markers
+    if (Object.keys(markers).length > 0) {
+        const group = new L.featureGroup(Object.values(markers));
+        map.fitBounds(group.getBounds().pad(0.1));
+    }
+}
+
+function refreshMap() {
+    loadTruckLocations();
+}
+</script>
+{% endblock %}

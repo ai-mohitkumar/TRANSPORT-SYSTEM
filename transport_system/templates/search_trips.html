@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}Search Trips - KALAWATI TRANSPORT{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="mb-4">
+            <i class="fas fa-search me-2"></i>Search Trips
+        </h2>
+    </div>
+</div>
+
+<!-- Search Form -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Search Criteria</h5>
+    </div>
+    <div class="card-body">
+        <form method="POST" class="row g-3">
+            <div class="col-md-4">
+                <label for="search_type" class="form-label">Search By</label>
+                <select class="form-select" id="search_type" name="search_type" required>
+                    <option value="">Choose search type...</option>
+                    <option value="customer">Customer Name</option>
+                    <option value="truck">Truck Number</option>
+                    <option value="status">Trip Status</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label for="query" class="form-label">Search Query</label>
+                <input type="text" class="form-control" id="query" name="query"
+                       placeholder="Enter search term..." required>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-search me-2"></i>Search
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Search Results -->
+{% if results %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Search Results ({{ results|length }} found)</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Trip ID</th>
+                        <th>Customer</th>
+                        <th>Route</th>
+                        <th>Truck</th>
+                        <th>Status</th>
+                        <th>Fare</th>
+                        <th>Paid</th>
+                        <th>Remaining</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for trip in results %}
+                    <tr>
+                        <td>
+                            <code>{{ trip.id[:8] }}...</code>
+                        </td>
+                        <td>{{ trip.customer }}</td>
+                        <td>{{ trip.pickup }} → {{ trip.destination }}</td>
+                        <td>{{ trip.truck_number }}</td>
+                        <td>
+                            <span class="badge bg-{{ 'warning' if trip.status == 'Booked' else 'info' if trip.status == 'In Transit' else 'success' }}">
+                                {{ trip.status }}
+                            </span>
+                        </td>
+                        <td>₹{{ trip.total_fare|round(2) if trip.total_fare else '0.00' }}</td>
+                        <td>₹{{ (trip.payments|sum(attribute='amount'))|round(2) }}</td>
+                        <td>
+                            {% set total_paid = trip.payments|sum(attribute='amount') %}
+                            {% set remaining = trip.total_fare - total_paid %}
+                            <span class="{{ 'text-danger' if remaining > 0 else 'text-success' }}">
+                                ₹{{ remaining|round(2) }}
+                            </span>
+                        </td>
+                        <td>{{ trip.timestamp[:10] }}</td>
+                        <td>
+                            <a href="{{ url_for('trip_details', trip_id=trip.id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% elif request.method == 'POST' %}
+<div class="alert alert-warning">
+    <i class="fas fa-exclamation-triangle me-2"></i>No trips found matching your search criteria.
+</div>
+{% endif %}
+
+<!-- Search Tips -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">Search Tips</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <h6>Customer Search</h6>
+                <p class="small text-muted">Search by customer name (partial matches allowed)</p>
+            </div>
+            <div class="col-md-4">
+                <h6>Truck Search</h6>
+                <p class="small text-muted">Search by truck registration number</p>
+            </div>
+            <div class="col-md-4">
+                <h6>Status Search</h6>
+                <p class="small text-muted">Search by status: Booked, In Transit, Delivered</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

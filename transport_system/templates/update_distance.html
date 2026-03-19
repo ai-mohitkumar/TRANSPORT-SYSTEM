@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Update Distance - KALAWATI TRANSPORT{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4">
+            <i class="fas fa-route me-2"></i>Update Distance
+        </h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Distance Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <strong>Trip:</strong> {{ trip.customer }}<br>
+                    <strong>Route:</strong> {{ trip.pickup }} → {{ trip.destination }}<br>
+                    <strong>Current Distance:</strong> {{ trip.distance_km if trip.distance_km else 'Not set' }} km
+                </div>
+
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="distance" class="form-label">Distance (km) *</label>
+                        <input type="number" step="0.01" class="form-control" id="distance" name="distance"
+                               placeholder="Enter distance in kilometers" required>
+                        <div class="form-text">
+                            Enter the distance between pickup and destination locations.
+                            Future: This will be auto-calculated using Google Maps API.
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('trip_details', trip_id=trip.id) }}" class="btn btn-outline-secondary me-md-2">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Update Distance
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Next Steps</h5>
+            </div>
+            <div class="card-body">
+                <h6>After updating distance:</h6>
+                <ol>
+                    <li>Calculate fare with loading charges</li>
+                    <li>Record advance payment from customer</li>
+                    <li>Start the trip when ready</li>
+                </ol>
+                <hr>
+                <p class="mb-0">
+                    <strong>Rate per km:</strong> ₹{{ trip.rate_per_km }}<br>
+                    <strong>Estimated fare:</strong> Distance × ₹{{ trip.rate_per_km }} + Loading charges
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}Edit User - KALAWATI TRANSPORT{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow">
+                <div class="card-header bg-warning text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-user-edit me-2"></i>Edit User: {{ user.name }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="username" class="form-label">
+                                    <i class="fas fa-user me-1"></i>Username
+                                </label>
+                                <input type="text" class="form-control" value="{{ user.username }}" readonly>
+                                <small class="text-muted">Username cannot be changed</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="name" class="form-label">
+                                    <i class="fas fa-id-card me-1"></i>Full Name *
+                                </label>
+                                <input type="text" class="form-control" id="name" name="name" value="{{ user.name }}" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label">
+                                    <i class="fas fa-envelope me-1"></i>Email
+                                </label>
+                                <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="phone" class="form-label">
+                                    <i class="fas fa-phone me-1"></i>Phone
+                                </label>
+                                <input type="tel" class="form-control" id="phone" name="phone" value="{{ user.phone }}">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="role" class="form-label">
+                                    <i class="fas fa-user-tag me-1"></i>Role *
+                                </label>
+                                <select class="form-select" id="role" name="role" required onchange="toggleTruckField()">
+                                    <option value="driver" {{ 'selected' if user.role == 'driver' else '' }}>Driver</option>
+                                    <option value="admin" {{ 'selected' if user.role == 'admin' else '' }}>Admin</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="is_active" class="form-label">
+                                    <i class="fas fa-toggle-on me-1"></i>Status
+                                </label>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="is_active" name="is_active" {{ 'checked' if user.is_active else '' }}>
+                                    <label class="form-check-label" for="is_active">
+                                        Active
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3" id="truckField">
+                            <label for="truck_number" class="form-label">
+                                <i class="fas fa-truck me-1"></i>Assigned Truck
+                            </label>
+                            <select class="form-select" id="truck_number" name="truck_number">
+                                <option value="">Not assigned</option>
+                                {% for truck in trucks %}
+                                <option value="{{ truck.number }}" {{ 'selected' if user.truck_number == truck.number else '' }}>
+                                    {{ truck.number }} ({{ truck.model }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">
+                                <i class="fas fa-lock me-1"></i>New Password (leave empty to keep current)
+                            </label>
+                            <input type="password" class="form-control" id="password" name="password">
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-save me-2"></i>Update User
+                            </button>
+                            <a href="{{ url_for('manage_users') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleTruckField() {
+    const role = document.getElementById('role').value;
+    const truckField = document.getElementById('truckField');
+    if (role === 'admin') {
+        truckField.style.display = 'none';
+    } else {
+        truckField.style.display = 'block';
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', toggleTruckField);
+</script>
+{% endblock %}

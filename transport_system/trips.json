@@ -1,0 +1,19 @@
+[
+    {
+        "id": "test-123",
+        "customer": "Test Customer",
+        "pickup": "Jaipur",
+        "destination": "Delhi",
+        "truck_number": "MH01AB1234",
+        "load_type": "Electronics",
+        "weight": 1000.0,
+        "rate_per_km": 25.0,
+        "distance_km": null,
+        "loading_charges": 0.0,
+        "total_fare": 0.0,
+        "advance_paid": 0.0,
+        "payments": [],
+        "status": "Booked",
+        "timestamp": "2024-01-01T00:00:00"
+    }
+]

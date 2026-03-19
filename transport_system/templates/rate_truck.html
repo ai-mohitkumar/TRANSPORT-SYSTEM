@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Rate Truck - KALAWATI TRANSPORT{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-truck me-2"></i>Rate Truck Performance
+                </h4>
+            </div>
+            <div class="card-body">
+                <!-- Trip Summary -->
+                <div class="alert alert-info">
+                    <h6>Trip Details:</h6>
+                    <p class="mb-1"><strong>Customer:</strong> {{ trip.customer }}</p>
+                    <p class="mb-1"><strong>Route:</strong> {{ trip.pickup }} → {{ trip.destination }}</p>
+                    <p class="mb-1"><strong>Truck:</strong> {{ trip.truck_number }}</p>
+                    <p class="mb-1"><strong>Load:</strong> {{ trip.load_type }} ({{ trip.weight }} kg)</p>
+                    <p class="mb-1"><strong>Distance:</strong> {{ trip.distance_km }} km</p>
+                </div>
+
+                <form method="POST">
+                    <div class="mb-4">
+                        <label class="form-label">Truck Rating (1-5 stars)</label>
+                        <div class="rating-stars">
+                            <div class="stars" id="rating-stars">
+                                <i class="far fa-star" data-rating="1"></i>
+                                <i class="far fa-star" data-rating="2"></i>
+                                <i class="far fa-star" data-rating="3"></i>
+                                <i class="far fa-star" data-rating="4"></i>
+                                <i class="far fa-star" data-rating="5"></i>
+                            </div>
+                            <input type="hidden" name="rating" id="rating-input" required>
+                        </div>
+                        <div class="form-text">
+                            1 = Poor performance, 2 = Below average, 3 = Average, 4 = Good, 5 = Excellent service
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="review" class="form-label">Performance Review (Optional)</label>
+                        <textarea class="form-control" id="review" name="review" rows="3"
+                                placeholder="Share feedback about truck performance, driver behavior, timeliness..."></textarea>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-truck me-2"></i>Submit Rating
+                        </button>
+                        <a href="{{ url_for('trip_details', trip_id=trip.id) }}" class="btn btn-secondary">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.rating-stars {
+    font-size: 2rem;
+}
+
+.rating-stars .stars {
+    color: #ddd;
+    cursor: pointer;
+}
+
+.rating-stars .stars i {
+    margin-right: 5px;
+    transition: color 0.2s;
+}
+
+.rating-stars .stars i:hover,
+.rating-stars .stars i.active {
+    color: #ffc107;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const stars = document.querySelectorAll('#rating-stars i');
+    const ratingInput = document.getElementById('rating-input');
+
+    stars.forEach(star => {
+        star.addEventListener('click', function() {
+            const rating = this.getAttribute('data-rating');
+            ratingInput.value = rating;
+
+            // Reset all stars
+            stars.forEach(s => s.className = 'far fa-star');
+
+            // Fill selected stars
+            for (let i = 0; i < rating; i++) {
+                stars[i].className = 'fas fa-star';
+            }
+        });
+
+        star.addEventListener('mouseover', function() {
+            const rating = this.getAttribute('data-rating');
+            stars.forEach((s, index) => {
+                if (index < rating) {
+                    s.classList.add('active');
+                } else {
+                    s.classList.remove('active');
+                }
+            });
+        });
+
+        star.addEventListener('mouseout', function() {
+            stars.forEach(s => s.classList.remove('active'));
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - KALAWATI TRANSPORT{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="mb-4">
+            <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+        </h2>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-route fa-2x text-primary mb-2"></i>
+                <h4 class="card-title">{{ total_trips }}</h4>
+                <p class="card-text text-muted">Total Trips</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-users fa-2x text-success mb-2"></i>
+                <h4 class="card-title">{{ total_customers }}</h4>
+                <p class="card-text text-muted">Total Customers</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-truck fa-2x text-info mb-2"></i>
+                <h4 class="card-title">{{ total_trucks }}</h4>
+                <p class="card-text text-muted">Total Trucks</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-rupee-sign fa-2x text-warning mb-2"></i>
+                <h4 class="card-title">₹{{ total_earnings|round(2) }}</h4>
+                <p class="card-text text-muted">Total Earnings</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Trips -->
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-clock me-2"></i>Recent Trips
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_trips %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Customer</th>
+                                <th>Route</th>
+                                <th>Status</th>
+                                <th>Fare</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for trip in recent_trips %}
+                            <tr>
+                                <td>{{ trip.id[:8] }}...</td>
+                                <td>{{ trip.customer }}</td>
+                                <td>{{ trip.pickup }} → {{ trip.destination }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'warning' if trip.status == 'Booked' else 'info' if trip.status == 'In Transit' else 'success' }}">
+                                        {{ trip.status }}
+                                    </span>
+                                </td>
+                                <td>₹{{ trip.total_fare }}</td>
+                                <td>
+                                    <a href="{{ url_for('trip_details', trip_id=trip.id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-4">No trips found. <a href="{{ url_for('create_trip') }}">Create your first trip</a></p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('create_trip') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Create New Trip
+                    </a>
+                    <a href="{{ url_for('add_customer') }}" class="btn btn-outline-success">
+                        <i class="fas fa-user-plus me-2"></i>Add Customer
+                    </a>
+                    <a href="{{ url_for('add_truck') }}" class="btn btn-outline-info">
+                        <i class="fas fa-truck me-2"></i>Add Truck
+                    </a>
+                    <a href="{{ url_for('reports') }}" class="btn btn-outline-warning">
+                        <i class="fas fa-chart-bar me-2"></i>View Reports
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Payments -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-money-bill-wave me-2"></i>Pending Payments
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if pending_payments %}
+                <div class="alert alert-warning">
+                    <strong>₹{{ total_pending|round(2) }}</strong> pending from {{ pending_payments|length }} trip(s)
+                </div>
+                {% for item in pending_payments[:3] %}
+                <div class="mb-2">
+                    <small class="text-muted">{{ item.trip.customer }}</small><br>
+                    <strong>₹{{ item.remaining|round(2) }}</strong> pending
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle me-2"></i>All payments up to date!
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

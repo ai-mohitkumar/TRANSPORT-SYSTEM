@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}All Trucks - KALAWATI TRANSPORT{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2 class="mb-0">
+                <i class="fas fa-truck me-2"></i>All Trucks
+            </h2>
+            <a href="{{ url_for('add_truck') }}" class="btn btn-primary">
+                <i class="fas fa-truck me-2"></i>Add New Truck
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        {% if trucks %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Truck Number</th>
+                        <th>Model</th>
+                        <th>Capacity (Tons)</th>
+                        <th>Rating</th>
+                        <th>Status</th>
+                        <th>Total Trips</th>
+                        <th>Total Earnings</th>
+                        <th>Added Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for truck in trucks %}
+                    <tr>
+                        <td>
+                            <strong>{{ truck.number }}</strong>
+                        </td>
+                        <td>{{ truck.model or 'N/A' }}</td>
+                        <td>{{ truck.capacity }}T</td>
+                        <td>
+                            {% if truck.get('average_rating') %}
+                            <div class="d-flex align-items-center">
+                                {% for i in range(5) %}
+                                <i class="fas fa-star {{ 'text-warning' if i < truck.average_rating else 'text-muted' }}" style="font-size: 12px;"></i>
+                                {% endfor %}
+                                <span class="ms-1 small">{{ truck.average_rating }}</span>
+                            </div>
+                            {% else %}
+                            <span class="text-muted small">No ratings</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ 'success' if truck.status == 'Available' else 'danger' }}">
+                                {{ truck.status }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-info">{{ truck.total_trips }}</span>
+                        </td>
+                        <td>₹{{ truck.total_earnings|round(2) }}</td>
+                        <td>{{ truck.added_at[:10] }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-truck fa-4x text-muted mb-3"></i>
+            <h4 class="text-muted">No trucks found</h4>
+            <p class="text-muted">Add your first truck to get started.</p>
+            <a href="{{ url_for('add_truck') }}" class="btn btn-primary">
+                <i class="fas fa-truck me-2"></i>Add First Truck
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

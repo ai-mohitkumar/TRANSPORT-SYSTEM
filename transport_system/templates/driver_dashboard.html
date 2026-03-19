@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}Driver Dashboard - KALAWATI TRANSPORT{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+.location-status {
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+.location-active {
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+.location-inactive {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-tachometer-alt me-2"></i>Driver Dashboard - {{ user.name }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Location Sharing Status -->
+                    <div class="location-status {% if user.last_location %}location-active{% else %}location-inactive{% endif %}">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-{% if user.last_location %}check-circle{% else %}times-circle{% endif %} me-2"></i>
+                            <div>
+                                <strong>Location Sharing: {% if user.last_location %}Active{% else %}Inactive{% endif %}</strong>
+                                {% if user.last_location %}
+                                <br><small>Last update: {{ user.last_location.timestamp[:19] }}</small>
+                                {% else %}
+                                <br><small>Enable location sharing to track your truck</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-8">
+                            <!-- Assigned Trips -->
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-truck me-2"></i>Assigned Trips
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    {% if assigned_trips %}
+                                    <div class="table-responsive">
+                                        <table class="table table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th>Trip ID</th>
+                                                    <th>Pickup</th>
+                                                    <th>Destination</th>
+                                                    <th>Status</th>
+                                                    <th>Fare</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for trip in assigned_trips %}
+                                                <tr>
+                                                    <td>{{ trip.id[:8] }}</td>
+                                                    <td>{{ trip.pickup }}</td>
+                                                    <td>{{ trip.destination }}</td>
+                                                    <td>
+                                                        <span class="badge bg-{{ 'warning' if trip.status == 'Booked' else 'info' if trip.status == 'In Transit' else 'success' }}">
+                                                            {{ trip.status }}
+                                                        </span>
+                                                    </td>
+                                                    <td>₹{{ "%.2f"|format(trip.total_fare) }}</td>
+                                                    <td>
+                                                        <a href="{{ url_for('trip_details', trip_id=trip.id) }}" class="btn btn-sm btn-outline-primary">
+                                                            <i class="fas fa-eye me-1"></i>View
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    {% else %}
+                                    <div class="text-center text-muted">
+                                        <i class="fas fa-truck fa-3x mb-3"></i>
+                                        <p>No trips assigned currently</p>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <!-- Quick Actions -->
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-bolt me-2"></i>Quick Actions
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <button class="btn btn-success w-100 mb-2" onclick="shareLocation()">
+                                        <i class="fas fa-map-marker-alt me-2"></i>Share Location
+                                    </button>
+                                    <button class="btn btn-info w-100 mb-2" onclick="stopSharing()">
+                                        <i class="fas fa-stop me-2"></i>Stop Sharing
+                                    </button>
+                                    <a href="{{ url_for('live_tracking') }}" class="btn btn-outline-primary w-100">
+                                        <i class="fas fa-map me-2"></i>View Live Map
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- Recent Locations -->
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-history me-2"></i>Recent Locations
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    {% if recent_locations %}
+                                    <div class="list-group list-group-flush">
+                                        {% for location in recent_locations %}
+                                        <div class="list-group-item px-0">
+                                            <small class="text-muted">{{ location.timestamp[:19] }}</small>
+                                            <div>
+                                                <strong>{{ "%.4f"|format(location.latitude) }}, {{ "%.4f"|format(location.longitude) }}</strong>
+                                                <br><small>Speed: {{ location.speed }} km/h</small>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% else %}
+                                    <div class="text-center text-muted">
+                                        <i class="fas fa-map-marker-alt fa-2x mb-2"></i>
+                                        <p>No location data</p>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let locationWatchId = null;
+
+function shareLocation() {
+    if (navigator.geolocation) {
+        locationWatchId = navigator.geolocation.watchPosition(
+            function(position) {
+                const locationData = {
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                    speed: position.coords.speed ? position.coords.speed * 3.6 : 0, // Convert m/s to km/h
+                    heading: position.coords.heading || 0,
+                    accuracy: position.coords.accuracy || 0
+                };
+
+                fetch('/update_location', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(locationData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showAlert('Location updated successfully!', 'success');
+                        // Update status
+                        document.querySelector('.location-status').className = 'location-status location-active';
+                        document.querySelector('.location-status strong').innerHTML = 'Location Sharing: Active';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error updating location:', error);
+                    showAlert('Error updating location', 'error');
+                });
+            },
+            function(error) {
+                console.error('Geolocation error:', error);
+                showAlert('Unable to get location. Please enable location services.', 'error');
+            },
+            {
+                enableHighAccuracy: true,
+                maximumAge: 30000,
+                timeout: 27000
+            }
+        );
+    } else {
+        showAlert('Geolocation is not supported by this browser.', 'error');
+    }
+}
+
+function stopSharing() {
+    if (locationWatchId) {
+        navigator.geolocation.clearWatch(locationWatchId);
+        locationWatchId = null;
+        document.querySelector('.location-status').className = 'location-status location-inactive';
+        document.querySelector('.location-status strong').innerHTML = 'Location Sharing: Inactive';
+        showAlert('Location sharing stopped.', 'info');
+    }
+}
+
+function showAlert(message, type) {
+    // Simple alert - you can enhance this with a proper notification system
+    alert(message);
+}
+</script>
+{% endblock %}

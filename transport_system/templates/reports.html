@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}Reports - KALAWATI TRANSPORT{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="mb-0">
+                <i class="fas fa-chart-bar me-2"></i>Reports & Analytics
+            </h2>
+            <div class="btn-group" role="group">
+                <a href="{{ url_for('download_report', report_type='summary') }}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-download me-1"></i>Summary PDF
+                </a>
+                <a href="{{ url_for('download_report', report_type='trips') }}" class="btn btn-success btn-sm">
+                    <i class="fas fa-download me-1"></i>Trips PDF
+                </a>
+                <a href="{{ url_for('download_report', report_type='customers') }}" class="btn btn-info btn-sm">
+                    <i class="fas fa-download me-1"></i>Customers PDF
+                </a>
+                <a href="{{ url_for('download_report', report_type='trucks') }}" class="btn btn-warning btn-sm">
+                    <i class="fas fa-download me-1"></i>Trucks PDF
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <!-- Daily Earnings -->
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-calendar-day fa-2x text-primary mb-2"></i>
+                <h4 class="card-title">₹{{ daily_earnings|round(2) }}</h4>
+                <p class="card-text text-muted">Today's Earnings</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monthly Earnings -->
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-calendar-alt fa-2x text-success mb-2"></i>
+                <h4 class="card-title">₹{{ monthly_earnings|round(2) }}</h4>
+                <p class="card-text text-muted">This Month</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Payments -->
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-money-bill-wave fa-2x text-warning mb-2"></i>
+                <h4 class="card-title">₹{{ total_pending|round(2) }}</h4>
+                <p class="card-text text-muted">Pending Payments</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Net Profit -->
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-chart-line fa-2x text-info mb-2"></i>
+                <h4 class="card-title {{ 'text-success' if net_profit >= 0 else 'text-danger' }}">
+                    ₹{{ net_profit|round(2) }}
+                </h4>
+                <p class="card-text text-muted">Net Profit</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Financial Summary -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-rupee-sign me-2"></i>Financial Summary
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-borderless">
+                        <tr>
+                            <td>Total Revenue:</td>
+                            <td class="text-end text-success">₹{{ total_revenue|round(2) }}</td>
+                        </tr>
+                        <tr>
+                            <td>Total Expenses:</td>
+                            <td class="text-end text-danger">₹{{ total_expenses|round(2) }}</td>
+                        </tr>
+                        <tr class="border-top">
+                            <td><strong>Net Profit:</strong></td>
+                            <td class="text-end">
+                                <strong class="{{ 'text-success' if net_profit >= 0 else 'text-danger' }}">
+                                    ₹{{ net_profit|round(2) }}
+                                </strong>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Payments List -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Pending Payments
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if pending_payments %}
+                <div class="list-group list-group-flush">
+                    {% for item in pending_payments[:5] %}
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ item.trip.customer }}</h6>
+                            <small class="text-muted">{{ item.trip.id[:8] }}...</small>
+                        </div>
+                        <p class="mb-1">{{ item.trip.pickup }} → {{ item.trip.destination }}</p>
+                        <div class="d-flex justify-content-between">
+                            <small class="text-danger">₹{{ item.remaining|round(2) }} pending</small>
+                            <a href="{{ url_for('trip_details', trip_id=item.trip.id) }}" class="btn btn-sm btn-outline-primary">
+                                View
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% if pending_payments|length > 5 %}
+                <div class="text-center mt-2">
+                    <small class="text-muted">... and {{ pending_payments|length - 5 }} more</small>
+                </div>
+                {% endif %}
+                {% else %}
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle me-2"></i>All payments are up to date!
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Additional Report Sections -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Report Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <h6>Daily Report</h6>
+                        <p class="small text-muted">Shows earnings for today only</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h6>Monthly Report</h6>
+                        <p class="small text-muted">Shows earnings for current month</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h6>Pending Payments</h6>
+                        <p class="small text-muted">Outstanding amounts from customers</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h6>Profit/Loss</h6>
+                        <p class="small text-muted">Revenue minus all trip expenses</p>
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-12">
+                        <h6>PDF Reports</h6>
+                        <p class="small text-muted">
+                            Download detailed PDF reports for offline viewing and record keeping.
+                            Available report types: Summary (overview), Trips (all trip details),
+                            Customers (customer information), Trucks (truck fleet details).
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

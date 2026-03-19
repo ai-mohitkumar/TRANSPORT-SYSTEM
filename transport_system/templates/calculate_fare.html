@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Calculate Fare - KALAWATI TRANSPORT{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4">
+            <i class="fas fa-calculator me-2"></i>Calculate Fare
+        </h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Fare Calculation</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <strong>Trip:</strong> {{ trip.customer }}<br>
+                    <strong>Route:</strong> {{ trip.pickup }} → {{ trip.destination }}<br>
+                    <strong>Distance:</strong> {{ trip.distance_km }} km<br>
+                    <strong>Rate per km:</strong> ₹{{ trip.rate_per_km }}
+                </div>
+
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="loading_charges" class="form-label">Loading Charges (₹) *</label>
+                        <input type="number" step="0.01" class="form-control" id="loading_charges" name="loading_charges"
+                               placeholder="Enter loading/unloading charges" required>
+                        <div class="form-text">
+                            Additional charges for loading and unloading the goods.
+                        </div>
+                    </div>
+
+                    <div class="alert alert-success">
+                        <strong>Calculated Fare:</strong><br>
+                        Distance ({{ trip.distance_km }} km) × Rate (₹{{ trip.rate_per_km }}) = ₹{{ (trip.distance_km * trip.rate_per_km)|round(2) }}<br>
+                        + Loading Charges = <strong>Total: ₹{{ ((trip.distance_km * trip.rate_per_km) + (trip.loading_charges or 0))|round(2) }}</strong>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('trip_details', trip_id=trip.id) }}" class="btn btn-outline-secondary me-md-2">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save me-2"></i>Calculate & Save Fare
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Fare Breakdown</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-borderless">
+                        <tr>
+                            <td>Distance Fare:</td>
+                            <td class="text-end">₹{{ (trip.distance_km * trip.rate_per_km)|round(2) }}</td>
+                        </tr>
+                        <tr>
+                            <td>Loading Charges:</td>
+                            <td class="text-end">₹{{ trip.loading_charges|round(2) }}</td>
+                        </tr>
+                        <tr class="border-top">
+                            <td><strong>Total Fare:</strong></td>
+                            <td class="text-end"><strong>₹{{ ((trip.distance_km * trip.rate_per_km) + trip.loading_charges)|round(2) }}</strong></td>
+                        </tr>
+                    </table>
+                </div>
+                <hr>
+                <h6>Next Steps:</h6>
+                <ol class="small">
+                    <li>Record advance payment from customer</li>
+                    <li>Start the trip when ready</li>
+                    <li>Track remaining payments during transit</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,12 @@
+[
+    {
+        "id": "test-truck-1",
+        "number": "TEST123",
+        "model": "Test Model",
+        "capacity": 10.0,
+        "status": "Available",
+        "total_trips": 0,
+        "total_earnings": 0.0,
+        "added_at": "2024-01-01T00:00:00"
+    }
+]

@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Document - KALAWATI TRANSPORT{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-upload me-2"></i>Upload Document
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="entity_type" class="form-label">Document Owner *</label>
+                                <select class="form-select" id="entity_type" name="entity_type" required>
+                                    <option value="">Select owner type</option>
+                                    <option value="truck">🚛 Truck/Vehicle</option>
+                                    <option value="user">👤 Driver/Staff</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="entity_id" class="form-label">Select Owner *</label>
+                                <select class="form-select" id="entity_id" name="entity_id" required disabled>
+                                    <option value="">Select owner first</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="document_type" class="form-label">Document Type *</label>
+                                <select class="form-select" id="document_type" name="document_type" required>
+                                    <option value="">Select document type</option>
+                                    <optgroup label="🚗 Vehicle Documents">
+                                        <option value="rc">Registration Certificate (RC)</option>
+                                        <option value="insurance">Insurance Policy</option>
+                                        <option value="pollution">Pollution Certificate</option>
+                                        <option value="fitness">Fitness Certificate</option>
+                                        <option value="permit">Permit</option>
+                                    </optgroup>
+                                    <optgroup label="👤 Driver Documents">
+                                        <option value="license">Driving License</option>
+                                        <option value="aadhaar">Aadhaar Card</option>
+                                        <option value="pan">PAN Card</option>
+                                        <option value="medical">Medical Certificate</option>
+                                        <option value="background">Background Check</option>
+                                    </optgroup>
+                                    <optgroup label="📋 Business Documents">
+                                        <option value="gst">GST Certificate</option>
+                                        <option value="license_business">Business License</option>
+                                        <option value="bank">Bank Documents</option>
+                                        <option value="agreement">Agreements/Contracts</option>
+                                        <option value="other">Other</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="expiry_date" class="form-label">Expiry Date (Optional)</label>
+                                <input type="date" class="form-control" id="expiry_date" name="expiry_date">
+                                <div class="form-text">For documents that expire</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description (Optional)</label>
+                        <textarea class="form-control" id="description" name="description" rows="2"
+                                placeholder="Add notes about this document"></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="file" class="form-label">Select File *</label>
+                        <input type="file" class="form-control" id="file" name="file" 
+                               accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required>
+                        <div class="form-text">Allowed: PDF, JPG, PNG, DOC, DOCX (Max 10MB)</div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-upload me-2"></i>Upload Document
+                        </button>
+                        <a href="{{ url_for('documents') }}" class="btn btn-secondary">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const entityTypeSelect = document.getElementById('entity_type');
+    const entityIdSelect = document.getElementById('entity_id');
+    
+    const trucks = {{ trucks|tojson }};
+    const users = {{ users|tojson }};
+    
+    entityTypeSelect.addEventListener('change', function() {
+        const entityType = this.value;
+        entityIdSelect.innerHTML = '<option value="">Select owner first</option>';
+        entityIdSelect.disabled = true;
+        
+        if (entityType === 'truck') {
+            trucks.forEach(truck => {
+                const option = document.createElement('option');
+                option.value = truck.number;
+                option.textContent = `${truck.number} (${truck.model || 'No model'})`;
+                entityIdSelect.appendChild(option);
+            });
+            entityIdSelect.disabled = false;
+        } else if (entityType === 'user') {
+            users.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.id;
+                option.textContent = `${user.name} (${user.username})`;
+                entityIdSelect.appendChild(option);
+            });
+            entityIdSelect.disabled = false;
+        }
+    });
+});
+</script>
+{% endblock %}

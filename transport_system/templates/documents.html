@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}Document Management - KALAWATI TRANSPORT{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2 class="mb-0">
+                <i class="fas fa-file-alt me-2"></i>Document Management
+            </h2>
+            <a href="{{ url_for('upload_document') }}" class="btn btn-primary">
+                <i class="fas fa-upload me-2"></i>Upload Document
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    {% for entity_key, entity_docs in documents_by_entity.items() %}
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    {% if entity_docs[0].entity_type == 'truck' %}
+                        <i class="fas fa-truck me-2"></i>
+                        Truck: {{ entity_docs[0].entity_id }}
+                    {% elif entity_docs[0].entity_type == 'user' %}
+                        <i class="fas fa-user me-2"></i>
+                        {% for user in users %}
+                            {% if user.id == entity_docs[0].entity_id %}
+                                {{ user.name }} ({{ user.username }})
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if entity_docs %}
+                <div class="list-group list-group-flush">
+                    {% for doc in entity_docs %}
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">
+                                    <i class="fas fa-file me-2"></i>{{ doc.document_type.title() }}
+                                </h6>
+                                <p class="mb-1 small text-muted">{{ doc.original_filename }}</p>
+                                {% if doc.description %}
+                                <p class="mb-1 small">{{ doc.description }}</p>
+                                {% endif %}
+                                {% if doc.expiry_date %}
+                                <p class="mb-1">
+                                    <small class="text-{% if doc.expiry_date < datetime.now().strftime('%Y-%m-%d') %}danger{% else %}success{% endif %}">
+                                        Expires: {{ doc.expiry_date }}
+                                    </small>
+                                </p>
+                                {% endif %}
+                                <small class="text-muted">Uploaded: {{ doc.uploaded_at[:10] }}</small>
+                            </div>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('download_document', document_id=doc.id) }}" 
+                                   class="btn btn-outline-primary" title="Download">
+                                    <i class="fas fa-download"></i>
+                                </a>
+                                <form method="POST" action="{{ url_for('delete_document', document_id=doc.id) }}" 
+                                      class="d-inline" onsubmit="return confirm('Delete this document?')">
+                                    <button type="submit" class="btn btn-outline-danger" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-3">
+                    <i class="fas fa-file-alt fa-2x mb-2"></i>
+                    <p>No documents uploaded yet</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if not documents_by_entity %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-file-alt fa-4x text-muted mb-3"></i>
+                <h4 class="text-muted">No Documents Yet</h4>
+                <p class="text-muted">Upload important documents like RC, insurance, licenses, etc.</p>
+                <a href="{{ url_for('upload_document') }}" class="btn btn-primary">
+                    <i class="fas fa-upload me-2"></i>Upload First Document
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Document Types Info -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Document Types</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <h6>🚗 Vehicle Documents</h6>
+                        <ul class="list-unstyled small">
+                            <li>• Registration Certificate (RC)</li>
+                            <li>• Insurance Policy</li>
+                            <li>• Pollution Certificate</li>
+                            <li>• Fitness Certificate</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-3">
+                        <h6>👤 Driver Documents</h6>
+                        <ul class="list-unstyled small">
+                            <li>• Driving License</li>
+                            <li>• Aadhaar Card</li>
+                            <li>• PAN Card</li>
+                            <li>• Medical Certificate</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-3">
+                        <h6>📋 Business Documents</h6>
+                        <ul class="list-unstyled small">
+                            <li>• GST Certificate</li>
+                            <li>• Trade License</li>
+                            <li>• Bank Statements</li>
+                            <li>• Agreements</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-3">
+                        <h6>⚠️ Important Reminders</h6>
+                        <ul class="list-unstyled small">
+                            <li>• Set expiry dates</li>
+                            <li>• Regular renewal checks</li>
+                            <li>• Keep backups</li>
+                            <li>• Digital storage</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
