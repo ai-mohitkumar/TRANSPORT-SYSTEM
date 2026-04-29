@@ -18,6 +18,13 @@ from models import db, User, Customer, Truck, Trip, Payment, Expense, Location, 
 from flask_migrate import Migrate
 
 app = Flask(__name__)
+
+@app.template_filter('datetimeformat')
+def datetimeformat(value):
+    if value:
+        return value.strftime('%Y-%m-%d %H:%M:%S')
+    return ""
+
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///kalawati.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key = 'transport_system_secret_key_2024_pro'
