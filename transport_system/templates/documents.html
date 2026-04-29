@@ -56,7 +56,7 @@
                                     </small>
                                 </p>
                                 {% endif %}
-                                <small class="text-muted">Uploaded: {{ doc.uploaded_at[:10] }}</small>
+                                <small class="text-muted">Uploaded: {{ doc.uploaded_at.strftime('%Y-%m-%d') if doc.uploaded_at else '-' }}</small>
                             </div>
                             <div class="btn-group btn-group-sm">
                                 <a href="{{ url_for('download_document', document_id=doc.id) }}" 

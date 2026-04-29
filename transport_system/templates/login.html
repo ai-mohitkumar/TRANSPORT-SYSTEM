@@ -6,32 +6,47 @@
 <div class="container-fluid">
     <div class="row justify-content-center align-items-center min-vh-100">
         <div class="col-md-6 col-lg-4">
-            <div class="card shadow">
+            <div class="login-card card shadow">
                 <div class="card-header bg-primary text-white text-center">
                     <h4 class="mb-0">
                         <i class="fas fa-sign-in-alt me-2"></i>Login to KALAWATI TRANSPORT
                     </h4>
                 </div>
                 <div class="card-body">
+                    <div class="alert alert-info text-center py-2">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Fast access to trip, truck, customer, and report management. Use the panel to track live locations and manage your fleet from a single screen.
+                    </div>
                     <form method="POST">
                         <div class="mb-3">
                             <label for="username" class="form-label">
                                 <i class="fas fa-user me-1"></i>Username
                             </label>
-                            <input type="text" class="form-control" id="username" name="username" required>
+                            <input type="text" class="form-control form-control-lg" id="username" name="username" required autofocus>
                         </div>
                         <div class="mb-3">
                             <label for="password" class="form-label">
                                 <i class="fas fa-lock me-1"></i>Password
                             </label>
-                            <input type="password" class="form-control" id="password" name="password" required>
+                            <input type="password" class="form-control form-control-lg" id="password" name="password" required>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" value="1" id="remember" name="remember">
+                            <label class="form-check-label" for="remember">Remember me</label>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <a href="#" class="text-decoration-none">Forgot Password?</a>
+                            <span class="small text-muted">Secure login with SHA-256 password hashing</span>
                         </div>
                         <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="btn btn-primary btn-lg">
                                 <i class="fas fa-sign-in-alt me-2"></i>Login
                             </button>
                         </div>
                     </form>
+                    <div class="text-center mt-3 small text-secondary">
+                        Need help signing in? Contact <a href="mailto:support@kalawati.com">support@kalawati.com</a>
+                    </div>
                 </div>
                 <div class="card-footer text-center">
                     <small class="text-muted">

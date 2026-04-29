@@ -9,7 +9,6 @@
             <i class="fas fa-plus me-2"></i>Create New Trip
         </h2>
     </div>
-</div>
 
 <div class="row">
     <div class="col-md-8">
@@ -24,12 +23,10 @@
                             <label for="customer" class="form-label">Customer Name *</label>
                             <input type="text" class="form-control" id="customer" name="customer" required>
                             <div class="form-text">New customer will be created if doesn't exist</div>
-                        </div>
                         <div class="col-md-6 mb-3">
                             <label for="truck_number" class="form-label">Truck Number *</label>
                             <input type="text" class="form-control" id="truck_number" name="truck_number" required>
                             <div class="form-text">New truck will be added if doesn't exist</div>
-                        </div>
                     </div>
 
                     <div class="row">
@@ -41,7 +38,6 @@
                             <label for="destination" class="form-label">Destination *</label>
                             <input type="text" class="form-control" id="destination" name="destination" required>
                         </div>
-                    </div>
 
                     <div class="row">
                         <div class="col-md-4 mb-3">
@@ -56,7 +52,21 @@
                             <label for="rate_per_km" class="form-label">Rate per km (₹) *</label>
                             <input type="number" step="0.01" class="form-control" id="rate_per_km" name="rate_per_km" required>
                         </div>
-                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="distance_km" class="form-label">Distance (km)</label>
+                            <div class="input-group">
+                                <input type="number" step="0.01" class="form-control" id="distance_km" name="distance_km" placeholder="Auto or manual">
+                                <button type="button" class="btn btn-outline-info" id="calcDistanceBtn" onclick="calculateDistance()">
+                                    <i class="fas fa-map-marker-alt me-1"></i>Auto
+                                </button>
+                            </div>
+                            <div class="form-text" id="distanceHelp">Click Auto to calculate via Google Maps API</div>
+                        <div class="col-md-6 mb-3">
+                            <label for="loading_charges" class="form-label">Loading Charges (₹)</label>
+                            <input type="number" step="0.01" class="form-control" id="loading_charges" name="loading_charges" value="0">
+                        </div>
 
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                         <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary me-md-2">
@@ -68,7 +78,6 @@
                     </div>
                 </form>
             </div>
-        </div>
     </div>
 
     <div class="col-md-4">
@@ -90,7 +99,49 @@
                     <strong>Note:</strong> Customer and truck will be auto-created if they don't exist in the system.
                 </p>
             </div>
-        </div>
     </div>
-</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function calculateDistance() {
+    const pickup = document.getElementById('pickup').value.trim();
+    const destination = document.getElementById('destination').value.trim();
+    const btn = document.getElementById('calcDistanceBtn');
+    const help = document.getElementById('distanceHelp');
+
+    if (!pickup || !destination) {
+        alert('Please enter both pickup and destination locations first.');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Calculating...';
+
+    fetch('{{ url_for("calculate_distance_api") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pickup: pickup, destination: destination })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.distance_km) {
+            document.getElementById('distance_km').value = data.distance_km;
+            help.textContent = 'Distance: ' + data.distance_km + ' km | Duration: ' + (data.duration || 'N/A');
+            help.className = 'form-text text-success';
+        } else {
+            help.textContent = data.message || 'Could not calculate distance. Please enter manually.';
+            help.className = 'form-text text-warning';
+        }
+    })
+    .catch(err => {
+        help.textContent = 'Error: ' + err.message + '. Enter manually.';
+        help.className = 'form-text text-danger';
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-map-marker-alt me-1"></i>Auto';
+    });
+}
+</script>
 {% endblock %}

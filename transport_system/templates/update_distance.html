@@ -19,7 +19,7 @@
             </div>
             <div class="card-body">
                 <div class="alert alert-info">
-                    <strong>Trip:</strong> {{ trip.customer }}<br>
+                    <strong>Trip:</strong> {{ trip.customer_name }}<br>
                     <strong>Route:</strong> {{ trip.pickup }} → {{ trip.destination }}<br>
                     <strong>Current Distance:</strong> {{ trip.distance_km if trip.distance_km else 'Not set' }} km
                 </div>

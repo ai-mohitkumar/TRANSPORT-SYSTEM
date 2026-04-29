@@ -1,23 +1,315 @@
 {% extends "base.html" %}
 {% block title %}Welcome - KALAWATI TRANSPORT{% endblock %}
+{% block extra_head %}
+<style>
+    .hero-section {
+        position: relative;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        padding: 0;
+        margin: -24px;
+    }
+    #particles-canvas {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        pointer-events: none;
+        z-index: 0;
+    }
+    .hero-content {
+        position: relative;
+        z-index: 2;
+        text-align: center;
+    }
+    .hero-logo {
+        width: 120px;
+        height: 120px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 12px 40px rgba(102, 126, 234, 0.4);
+        margin-bottom: 2rem;
+        animation: floatHero 4s ease-in-out infinite;
+    }
+    @keyframes floatHero {
+        0%, 100% { transform: translateY(0) scale(1); }
+        50% { transform: translateY(-15px) scale(1.05); }
+    }
+    .hero-title {
+        font-size: 4rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 1rem;
+        animation: fadeInUp 1s ease;
+    }
+    .hero-subtitle {
+        font-size: 1.5rem;
+        color: var(--text-secondary);
+        margin-bottom: 3rem;
+        animation: fadeInUp 1.2s ease;
+    }
+    .hero-stats {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        margin-bottom: 3rem;
+        animation: fadeInUp 1.4s ease;
+    }
+    .hero-stat {
+        background: var(--glass-bg);
+        backdrop-filter: blur(10px);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        padding: 1.5rem 2rem;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+    .hero-stat:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow);
+    }
+    .hero-stat-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #667eea;
+    }
+    .hero-stat-label {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .hero-buttons {
+        animation: fadeInUp 1.6s ease;
+    }
+    .hero-btn {
+        padding: 14px 40px;
+        border-radius: 30px;
+        font-weight: 600;
+        font-size: 1.1rem;
+        transition: all 0.3s ease;
+        margin: 0 10px;
+    }
+    .hero-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    }
+    .features-section {
+        padding: 5rem 2rem;
+        position: relative;
+        z-index: 2;
+    }
+    .feature-card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(10px);
+        border: 1px solid var(--glass-border);
+        border-radius: 20px;
+        padding: 2.5rem;
+        text-align: center;
+        transition: all 0.4s ease;
+        height: 100%;
+    }
+    .feature-card:hover {
+        transform: translateY(-10px) rotate(1deg);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+    }
+    .feature-icon {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1.5rem;
+        font-size: 2rem;
+        color: white;
+    }
+    .scroll-indicator {
+        position: absolute;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        animation: bounce 2s infinite;
+        color: var(--text-secondary);
+    }
+    @keyframes bounce {
+        0%, 20%, 50%, 80%, 100% { transform: translateX(-50%) translateY(0); }
+        40% { transform: translateX(-50%) translateY(-10px); }
+        60% { transform: translateX(-50%) translateY(-5px); }
+    }
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+{% endblock %}
 {% block content %}
-<div class="hero-section text-center py-5">
-  <div class="logo-circle mb-4">
-    <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" class="rounded-circle" style="width: 100px; height: 100px;">
-  </div>
-  <h1 class="display-4 mb-4">KALAWATI TRANSPORT</h1>
-  <p class="lead mb-5">Smart Payment & Tracking System</p>
-  <div class="row justify-content-center">
-    <div class="col-md-4">
-      <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg w-100 mb-3">
-        <i class="fas fa-sign-in-alt me-2"></i>Login
-      </a>
+<div class="hero-section">
+    <canvas id="particles-canvas"></canvas>
+    <div class="hero-content">
+        <div class="hero-logo">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" style="width: 70px; height: 70px; object-fit: cover; border-radius: 50%;">
+        </div>
+        <h1 class="hero-title">KALAWATI TRANSPORT</h1>
+        <p class="hero-subtitle">Smart Logistics, Real-Time Tracking & Fleet Management</p>
+
+        <div class="hero-stats">
+            <div class="hero-stat">
+                <div class="hero-stat-number">{{ total_trips }}</div>
+                <div class="hero-stat-label">Trips</div>
+            </div>
+            <div class="hero-stat">
+                <div class="hero-stat-number">{{ total_customers }}</div>
+                <div class="hero-stat-label">Customers</div>
+            </div>
+            <div class="hero-stat">
+                <div class="hero-stat-number">{{ total_trucks }}</div>
+                <div class="hero-stat-label">Trucks</div>
+            </div>
+            <div class="hero-stat">
+                <div class="hero-stat-number">{{ completed_trips }}</div>
+                <div class="hero-stat-label">Delivered</div>
+            </div>
+        </div>
+
+        <div class="hero-buttons">
+            <a href="{{ url_for('login') }}" class="btn btn-primary hero-btn">
+                <i class="fas fa-sign-in-alt me-2"></i>Login
+            </a>
+            <a href="{{ url_for('register') }}" class="btn btn-outline-primary hero-btn" style="border: 2px solid #667eea; color: #667eea;">
+                <i class="fas fa-user-plus me-2"></i>Register
+            </a>
+        </div>
     </div>
-    <div class="col-md-4">
-      <a href="{{ url_for('register') }}" class="btn btn-outline-primary btn-lg w-100">
-        <i class="fas fa-user-plus me-2"></i>Register
-      </a>
+    <div class="scroll-indicator">
+        <i class="fas fa-chevron-down fa-2x"></i>
     </div>
-  </div>
+</div>
+
+<div class="features-section">
+    <h2 class="text-center mb-5" style="font-weight: 700; color: var(--text-primary);">
+        <i class="fas fa-star text-warning me-2"></i>Why Choose Kalawati Transport?
+    </h2>
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-map-marked-alt"></i></div>
+                <h4>Live GPS Tracking</h4>
+                <p class="text-muted">Track your trucks in real-time with Google Maps integration. Know exactly where your cargo is.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-file-invoice-dollar"></i></div>
+                <h4>GST Invoicing</h4>
+                <p class="text-muted">Auto-generate professional GST invoices and PDF reports with one click.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-chart-line"></i></div>
+                <h4>Analytics Dashboard</h4>
+                <p class="text-muted">Beautiful charts showing earnings, trip status, and top customers at a glance.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-truck-moving"></i></div>
+                <h4>Fleet Management</h4>
+                <p class="text-muted">Manage your entire truck fleet with ratings, earnings tracking, and maintenance alerts.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-users"></i></div>
+                <h4>Customer CRM</h4>
+                <p class="text-muted">Track customer trips, ratings, and payment history in one place.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-mobile-alt"></i></div>
+                <h4>Driver Mobile App</h4>
+                <p class="text-muted">Drivers can update location and track trips from their mobile phones.</p>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
+
+{% block scripts %}
+<script>
+// Particle Animation
+const canvas = document.getElementById('particles-canvas');
+const ctx = canvas.getContext('2d');
+let particles = [];
+function resizeCanvas() {
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+class Particle {
+    constructor() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.size = Math.random() * 3 + 1;
+        this.speedX = (Math.random() - 0.5) * 1;
+        this.speedY = (Math.random() - 0.5) * 1;
+        this.opacity = Math.random() * 0.5 + 0.1;
+    }
+    update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        if (this.x > canvas.width) this.x = 0;
+        if (this.x < 0) this.x = canvas.width;
+        if (this.y > canvas.height) this.y = 0;
+        if (this.y < 0) this.y = canvas.height;
+    }
+    draw() {
+        ctx.fillStyle = `rgba(102, 126, 234, ${this.opacity})`;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+for (let i = 0; i < 60; i++) particles.push(new Particle());
+
+function animateParticles() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach(p => {
+        p.update();
+        p.draw();
+    });
+    // Draw connections
+    for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+            const dx = particles[i].x - particles[j].x;
+            const dy = particles[i].y - particles[j].y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 120) {
+                ctx.strokeStyle = `rgba(102, 126, 234, ${0.15 * (1 - dist / 120)})`;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(particles[i].x, particles[i].y);
+                ctx.lineTo(particles[j].x, particles[j].y);
+                ctx.stroke();
+            }
+        }
+    }
+    requestAnimationFrame(animateParticles);
+}
+animateParticles();
+</script>
+{% endblock %}
+

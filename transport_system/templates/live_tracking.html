@@ -94,8 +94,8 @@
                                             No location data
                                         {% endif %}
                                     </td>
-                                    <td>
-                                        {% if driver.user.last_location %}
+<td>
+                                        {% if driver.user.last_location and driver.user.last_location.timestamp %}
                                             {{ driver.user.last_location.timestamp[:19] }}
                                         {% else %}
                                             Never

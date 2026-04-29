@@ -1,19 +1,95 @@
 [
     {
-        "id": "test-123",
-        "customer": "Test Customer",
-        "pickup": "Jaipur",
-        "destination": "Delhi",
-        "truck_number": "MH01AB1234",
-        "load_type": "Electronics",
-        "weight": 1000.0,
-        "rate_per_km": 25.0,
+        "id": "d593d159-c6a6-4dc4-902d-bdc1b772b687",
+        "customer": "mohit",
+        "pickup": "bihar",
+        "destination": "up",
+        "truck_number": "BR44D8622",
+        "load_type": "heavy",
+        "weight": 500.0,
+        "rate_per_km": 1000.0,
+        "distance_km": 570.0,
+        "loading_charges": 0.0,
+        "total_fare": 0.0,
+        "advance_paid": 0.0,
+        "payments": [
+            {
+                "type": "payment",
+                "amount": 20000.0,
+                "timestamp": "2026-03-30T13:11:36.179397"
+            }
+        ],
+        "expenses": [
+            {
+                "id": "57365f20-7fa3-47ad-8eb1-dad0eba817f6",
+                "type": "fuel",
+                "amount": 15000.0,
+                "description": "",
+                "timestamp": "2026-03-30T13:12:14.269719"
+            },
+            {
+                "id": "95713917-5225-41f1-a2ac-36bf7d1cc76d",
+                "type": "maintenance",
+                "amount": 5000.0,
+                "description": "",
+                "timestamp": "2026-03-30T13:12:34.367811"
+            }
+        ],
+        "status": "Delivered",
+        "timestamp": "2026-03-30T13:11:17.544285",
+        "truck_rating": {
+            "rating": 3,
+            "review": "3",
+            "rated_by": "1979",
+            "rated_at": "2026-03-30T13:12:57.857453"
+        },
+        "customer_rating": {
+            "rating": 5,
+            "review": "",
+            "rated_by": "1979",
+            "rated_at": "2026-03-30T13:13:27.887441"
+        }
+    },
+    {
+        "id": "c7923668-0b2c-473c-90d3-30e828fe45c5",
+        "customer": "mohit",
+        "pickup": "bihar",
+        "destination": "up",
+        "truck_number": "BR44D8622",
+        "load_type": "heavy",
+        "weight": 50.0,
+        "rate_per_km": 100.0,
+        "distance_km": 1000.0,
+        "loading_charges": 0.0,
+        "total_fare": 0.0,
+        "advance_paid": 0.0,
+        "payments": [
+            {
+                "type": "advance",
+                "amount": 100.0,
+                "timestamp": "2026-04-10T14:28:23.141554"
+            }
+        ],
+        "expenses": [],
+        "status": "Booked",
+        "timestamp": "2026-04-10T14:26:24.058928"
+    },
+    {
+        "id": "35a71fd6-b57d-494a-a144-b859e8971fc5",
+        "customer": "ayush",
+        "pickup": "bihar",
+        "destination": "up",
+        "truck_number": "BR44D8622",
+        "load_type": "heavy",
+        "weight": 50.0,
+        "rate_per_km": 100.0,
         "distance_km": null,
         "loading_charges": 0.0,
         "total_fare": 0.0,
         "advance_paid": 0.0,
         "payments": [],
+        "expenses": [],
         "status": "Booked",
-        "timestamp": "2024-01-01T00:00:00"
+        "timestamp": "2026-04-11T23:48:01.811296"
     }
 ]

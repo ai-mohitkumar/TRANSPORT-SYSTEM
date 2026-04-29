@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Invoice - {{ trip.customer_name }}{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-file-invoice text-primary me-2"></i>Tax Invoice</h2>
+            <a href="{{ url_for('generate_invoice_pdf', trip_id=trip.id) }}" class="btn btn-primary">
+                <i class="fas fa-download me-2"></i>Download PDF
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card shadow-lg" style="border: 2px solid #667eea;">
+            <div class="card-body p-5">
+                <!-- Invoice Header -->
+                <div class="text-center mb-4">
+                    <div class="logo-circle mb-3" style="width: 70px; height: 70px;">
+                        <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" style="width:100%; height:100%; object-fit:cover; border-radius: inherit;">
+                    </div>
+                    <h2 class="fw-bold" style="color: #667eea;">KALAWATI TRANSPORT</h2>
+                    <p class="text-muted mb-0">Transport & Logistics Services</p>
+                    <p class="text-muted small">GSTIN: 07AABCU9603R1ZX | Phone: +91-9876543210</p>
+                </div>
+                
+                <div class="row mb-4

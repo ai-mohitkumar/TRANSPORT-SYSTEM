@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+
+{% block title %}Live News - KALAWATI TRANSPORT{% endblock %}
+
+{% block head %}
+{{ super() }}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+<style>
+.news-container {
+    max-height: 80vh;
+    overflow-y: auto;
+}
+.news-card {
+    transition: all 0.3s ease;
+    border: none;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+.news-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+.news-image {
+    height: 200px;
+    object-fit: cover;
+    border-radius: 10px 10px 0 0;
+}
+.source-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 0.75rem;
+}
+.refresh-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h1 class="display-5 fw-bold text-primary mb-0">
+                    <i class="fas fa-newspaper me-2"></i>📰 Live Indian News
+                </h1>
+                <div>
+                    <span class="badge bg-success fs-6 me-2" id="last-updated">-</span>
+                    <button class="btn btn-primary" onclick="loadNews()">
+                        <i class="fas fa-sync-alt me-1"></i>Refresh News
+                    </button>
+                </div>
+            </div>
+            <p class="text-muted lead">Latest Indian news headlines updated every 15 minutes</p>
+        </div>
+    </div>
+
+    <!-- News Categories Tabs -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <ul class="nav nav-tabs" id="newsTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button">
+                        All News
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="india-tab" data-bs-toggle="tab" data-bs-target="#india" type="button">
+                        India <i class="fas fa-flag"></i>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="business-tab" data-bs-toggle="tab" data-bs-target="#business" type="button">
+                        Business <i class="fas fa-rupee-sign"></i>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="transport-tab" data-bs-toggle="tab" data-bs-target="#transport" type="button">
+                        Transport <i class="fas fa-truck"></i>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="tech-tab" data-bs-toggle="tab" data-bs-target="#tech" type="button">
+                        Technology
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- News Content -->
+    <div class="row">
+        <div class="col-12">
+            <div class="tab-content" id="newsTabContent">
+                <!-- All News Tab -->
+                <div class="tab-pane fade show active" id="all" role="tabpanel">
+                    <div class="news-container" id="news-all">
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-3 text-muted">Loading latest Indian news...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- India Tab -->
+                <div class="tab-pane fade" id="india" role="tabpanel">
+                    <div class="news-container" id="news-india">
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Business Tab -->
+                <div class="tab-pane fade" id="business" role="tabpanel">
+                    <div class="news-container" id="news-business">
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-success" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transport Tab -->
+                <div class="tab-pane fade" id="transport" role="tabpanel">
+                    <div class="news-container" id="news-transport">
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-warning" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tech Tab -->
+                <div class="tab-pane fade" id="tech" role="tabpanel">
+                    <div class="news-container" id="news-tech">
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-info" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Floating Refresh Button -->
+<button class="btn btn-primary refresh-btn shadow-lg" onclick="loadNews()" title="Refresh All News">
+    <i class="fas fa-sync-alt fa-spin"></i>
+</button>
+
+<script>
+// News NewsAPI.org key (free tier - get your own at newsapi.org)
+const NEWS_API_KEY = 'your-newsapi-key-here';
+const NEWS_SOURCES = {
+    all: 'bbc-news+reuters+the-hindu+times-of-india+indian-express',
+    india: 'the-hindu+times-of-india+indian-express+ndtv-news-india',
+    business: 'business-standard+business-today+financial-times',
+    transport: 'reuters+bbc-news', // Transport news via general sources
+    tech: 'techcrunch+the-verge+wired+engadget'
+};
+
+let lastUpdateTime = null;
+
+function loadNews() {
+    const activeTab = document.querySelector('.tab-pane.show.active').id;
+    const newsContainerId = `#news-${activeTab}`;
+    const container = document.querySelector(newsContainerId);
+    
+    // Show loading
+    container.innerHTML = `
+        <div class="text-center py-5">
+            <div class="spinner-grow text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3 text-muted">Fetching latest news...</p>
+        </div>
+    `;
+
+    const category = activeTab === 'all' ? 'general' : activeTab;
+    const sources = NEWS_SOURCES[activeTab];
+    
+    fetch(`https://newsapi.org/v2/top-headlines?country=in&category=${category}&apiKey=${NEWS_API_KEY}&pageSize=10`)
+        .then(response => response.json())
+        .then(data => {
+            displayNews(data.articles, container);
+            lastUpdateTime = new Date().toLocaleTimeString();
+            document.getElementById('last-updated').textContent = `Updated: ${lastUpdateTime}`;
+        })
+        .catch(error => {
+            console.error('News API Error:', error);
+            container.innerHTML = `
+                <div class="alert alert-warning text-center py-5">
+                    <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+                    <h4>News temporarily unavailable</h4>
+                    <p>Get your free API key at <a href="https://newsapi.org" target="_blank">newsapi.org</a></p>
+                    <button class="btn btn-primary" onclick="loadNews()">Retry</button>
+                </div>
+            `;
+        });
+}
+
+function displayNews(articles, container) {
+    if (!articles || articles.length === 0) {
+        container.innerHTML = '<div class="alert alert-info text-center py-5">No news available</div>';
+        return;
+    }
+
+    let newsHtml = '';
+    articles.forEach(article => {
+        const imageUrl = article.urlToImage || '/static/no-image.jpg';
+        const source = article.source.name;
+        const published = new Date(article.publishedAt).toLocaleDateString('en-IN');
+        
+        newsHtml += `
+            <div class="card news-card mb-4">
+                <img src="${imageUrl}" class="card-img-top news-image" alt="${article.title}" 
+                     onerror="this.src='/static/no-image.jpg'">
+                <span class="badge bg-primary source-badge">${source}</span>
+                <div class="card-body">
+                    <h5 class="card-title">${article.title}</h5>
+                    <p class="card-text">${article.description || ''}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">${published}</small>
+                        <a href="${article.url}" target="_blank" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-external-link-alt me-1"></i>Read More
+                        </a>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = newsHtml;
+}
+
+// Auto-load news on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadNews();
+    
+    // Auto refresh every 15 minutes
+    setInterval(loadNews, 15 * 60 * 1000);
+});
+</script>
+{% endblock %}

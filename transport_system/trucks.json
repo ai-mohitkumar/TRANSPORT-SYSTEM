@@ -8,5 +8,25 @@
         "total_trips": 0,
         "total_earnings": 0.0,
         "added_at": "2024-01-01T00:00:00"
+    },
+    {
+        "id": "5eaf8b8c-5400-4486-a4eb-8b3bc6a04e5e",
+        "number": "BR44D8622",
+        "model": "",
+        "capacity": 0.0,
+        "status": "Busy",
+        "total_trips": 1,
+        "total_earnings": 0.0,
+        "added_at": "2026-03-30T13:11:17.543092",
+        "ratings": [
+            {
+                "rating": 3,
+                "review": "3",
+                "trip_id": "d593d159-c6a6-4dc4-902d-bdc1b772b687",
+                "rated_at": "2026-03-30T13:12:57.882958"
+            }
+        ],
+        "average_rating": 3.0,
+        "total_ratings": 1
     }
 ]

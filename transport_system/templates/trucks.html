@@ -10,39 +10,97 @@
                 <i class="fas fa-truck me-2"></i>All Trucks
             </h2>
             <a href="{{ url_for('add_truck') }}" class="btn btn-primary">
-                <i class="fas fa-truck me-2"></i>Add New Truck
+                <i class="fas fa-plus me-2"></i>Add New Truck
             </a>
         </div>
-    </div>
 </div>
 
+<div class="row mb-4">
+    <!-- Truck Stats -->
+    <div class="col-md-3">
+        <div class="card text-center bg-primary text-white">
+            <div class="card-body">
+                <i class="fas fa-truck fa-2x mb-2"></i>
+                <h4 class="card-title">{{ trucks|length }}</h4>
+                <p class="card-text">Total Trucks</p>
+            </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center bg-success text-white">
+            <div class="card-body">
+                <i class="fas fa-check-circle fa-2x mb-2"></i>
+                <h4 class="card-title">{{ trucks|selectattr('status', 'equalto', 'Available')|list|length }}</h4>
+                <p class="card-text">Available</p>
+            </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center bg-danger text-white">
+            <div class="card-body">
+                <i class="fas fa-clock fa-2x mb-2"></i>
+                <h4 class="card-title">{{ trucks|selectattr('status', 'equalto', 'Busy')|list|length }}</h4>
+                <p class="card-text">Busy</p>
+            </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center bg-info text-white">
+            <div class="card-body">
+                <i class="fas fa-road fa-2x mb-2"></i>
+                <h4 class="card-title">{{ trucks|sum(attribute='total_trips') }}</h4>
+                <p class="card-text">Total Trips</p>
+            </div>
+    </div>
+
+<!-- Charts -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Truck Status Distribution</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="truckStatusChart" height="200"></canvas>
+            </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Top Earning Trucks</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="truckEarningsChart" height="200"></canvas>
+            </div>
+    </div>
+
 <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-list me-2"></i>Truck Fleet</h5>
+        <input type="text" id="truckSearch" class="form-control form-control-sm w-25" placeholder="Search trucks..." onkeyup="filterTrucks()">
+    </div>
     <div class="card-body">
         {% if trucks %}
         <div class="table-responsive">
-            <table class="table table-hover">
+            <table class="table table-hover" id="trucksTable">
                 <thead class="table-dark">
                     <tr>
                         <th>Truck Number</th>
                         <th>Model</th>
-                        <th>Capacity (Tons)</th>
+                        <th>Capacity</th>
                         <th>Rating</th>
                         <th>Status</th>
                         <th>Total Trips</th>
                         <th>Total Earnings</th>
                         <th>Added Date</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for truck in trucks %}
                     <tr>
-                        <td>
-                            <strong>{{ truck.number }}</strong>
-                        </td>
+                        <td><strong>{{ truck.number }}</strong></td>
                         <td>{{ truck.model or 'N/A' }}</td>
                         <td>{{ truck.capacity }}T</td>
                         <td>
-                            {% if truck.get('average_rating') %}
+                            {% if truck.average_rating %}
                             <div class="d-flex align-items-center">
                                 {% for i in range(5) %}
                                 <i class="fas fa-star {{ 'text-warning' if i < truck.average_rating else 'text-muted' }}" style="font-size: 12px;"></i>
@@ -61,8 +119,21 @@
                         <td>
                             <span class="badge bg-info">{{ truck.total_trips }}</span>
                         </td>
-                        <td>₹{{ truck.total_earnings|round(2) }}</td>
-                        <td>{{ truck.added_at[:10] }}</td>
+                        <td>₹{{ "%.2f"|format(truck.total_earnings) }}</td>
+                        <td>{{ truck.added_at.strftime('%Y-%m-%d') if truck.added_at else '-' }}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('live_tracking') }}?truck={{ truck.number }}" class="btn btn-outline-info" title="Track">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                </a>
+                                <a href="{{ url_for('trip_details', trip_id=truck.number) }}" class="btn btn-outline-primary" title="History">
+                                    <i class="fas fa-history"></i>
+                                </a>
+                                <button type="button" class="btn btn-outline-danger" onclick="deleteTruck('{{ truck.id }}', '{{ truck.number }}')" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -74,10 +145,72 @@
             <h4 class="text-muted">No trucks found</h4>
             <p class="text-muted">Add your first truck to get started.</p>
             <a href="{{ url_for('add_truck') }}" class="btn btn-primary">
-                <i class="fas fa-truck me-2"></i>Add First Truck
+                <i class="fas fa-plus me-2"></i>Add First Truck
             </a>
         </div>
         {% endif %}
     </div>
-</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Truck Status Doughnut Chart
+const statusCtx = document.getElementById('truckStatusChart').getContext('2d');
+const availableCount = {{ trucks|selectattr('status', 'equalto', 'Available')|list|length }};
+const busyCount = {{ trucks|selectattr('status', 'equalto', 'Busy')|list|length }};
+new Chart(statusCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Available', 'Busy'],
+        datasets: [{
+            data: [availableCount, busyCount],
+            backgroundColor: ['#28a745', '#dc3545'],
+            borderWidth: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { position: 'bottom' } }
+    }
+});
+
+// Top Earning Trucks Bar Chart
+const earningsCtx = document.getElementById('truckEarningsChart').getContext('2d');
+const topTrucks = {{ trucks|sort(attribute='total_earnings', reverse=true)|map(attribute='number')|list|tojson }};
+const topEarnings = {{ trucks|sort(attribute='total_earnings', reverse=true)|map(attribute='total_earnings')|list|tojson }};
+new Chart(earningsCtx, {
+    type: 'bar',
+    data: {
+        labels: topTrucks.slice(0, 5),
+        datasets: [{
+            label: 'Total Earnings (₹)',
+            data: topEarnings.slice(0, 5),
+            backgroundColor: ['#667eea', '#764ba2', '#1cc88a', '#36b9cc', '#f6c23e'],
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: { y: { beginAtZero: true } },
+        plugins: { legend: { display: false } }
+    }
+});
+
+// Search filter
+function filterTrucks() {
+    const input = document.getElementById('truckSearch').value.toLowerCase();
+    const rows = document.querySelectorAll('#trucksTable tbody tr');
+    rows.forEach(row => {
+        row.style.display = row.innerText.toLowerCase().includes(input) ? '' : 'none';
+    });
+}
+
+// Delete confirmation
+function deleteTruck(truckId, truckNumber) {
+    if (confirm('Are you sure you want to delete truck ' + truckNumber + '?')) {
+        fetch('/delete_truck/' + truckId, {method: 'POST'}).then(() => location.reload());
+    }
+}
+</script>
 {% endblock %}

@@ -1,42 +1,41 @@
-# KALAWATI TRANSPORT - Smart Payment & Tracking System 🚛
+# KALAWATI TRANSPORT - Transport Management System 🚛
 
 ## 🎯 Quick Start
 
-### Local Development
-```bash
+**Run the app:**
+```cmd
 cd transport_system
-pip install -r requirements.txt
-python main.py
+..\venv_local\Scripts\python.exe main.py
 ```
-**Web:** http://localhost:5000  
-**CLI:** Interactive menu
 
-### Production Deploy
+**Open in browser:** http://localhost:5000
 
-**Render.com** (Recommended - persistent server):
-1. render.com → New → Web Service → Connect GitHub `ai-mohitkumar/TRANSPORT-SYSTEM`
-2. **Runtime:** Python 3
-3. **Build:** `pip install -r requirements.txt`
-4. **Start:** `gunicorn main:app`
-5. Deploy → **Free tier** https://your-app.onrender.com
+## ✨ Features
+- **Chart.js Dashboard** — Monthly earnings trend, trip status pie chart, top customers bar chart
+- **Google Maps Integration** — Auto-distance calculation when creating trips
+- **Google Maps Live Tracking** — Real-time truck location tracking on Google Maps
+- **Full Trip Lifecycle** — Booking → Distance → Fare → Payment → Delivery
+- **Customer & Truck Management** — With statistics and ratings
+- **PDF Reports** — Financial summary, trip details, customer & truck reports
+- **Admin/Driver Login** — Role-based access control
+- **Document Upload** — Truck & driver document management with expiry tracking
 
-**Vercel** (Serverless):
-1. vercel.com → Import repo
-2. Auto-detect Python
-3. Deploy → Free but cold starts
+## 🗺️ Google Maps Setup (Optional)
+To enable Google Maps features, set your API key:
+```cmd
+set GOOGLE_MAPS_API_KEY=your_api_key_here
+```
+Then restart the app.
 
-## 📱 Features Live
-- ✅ 11-Step Trip Workflow (Book→Track→Pay→Deliver)
-- ✅ Modern Responsive UI (Bootstrap 5 + Custom CSS)
-- ✅ CLI + Web App
-- ✅ Customer/Truck Management
-- ✅ Real-time Reports (PDF Export)
-- ✅ Expense Tracking
-- ✅ Login/Auth (Admin/Driver roles)
+## 📁 Project Structure
+- `main.py` — Flask backend with all routes
+- `models.py` — SQLAlchemy database models
+- `templates/` — HTML templates
+- `static/` — Logo and assets
+- `uploads/` — Uploaded documents
 
-## 🔗 Live Demos
-- **Local:** http://localhost:5000
-- **GitHub:** https://github.com/ai-mohitkumar/TRANSPORT-SYSTEM
-- **Deploy:** Render/Vercel (connect repo)
-
-**First login:** Register → Dashboard ready!
+## 🔗 First Time Use
+1. Run the app
+2. Go to http://localhost:5000
+3. Click **Register** to create an account
+4. Login and access the dashboard

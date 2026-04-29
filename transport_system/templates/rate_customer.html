@@ -15,7 +15,7 @@
                 <!-- Trip Summary -->
                 <div class="alert alert-info">
                     <h6>Trip Details:</h6>
-                    <p class="mb-1"><strong>Customer:</strong> {{ trip.customer }}</p>
+{{ trip.customer_name }}
                     <p class="mb-1"><strong>Route:</strong> {{ trip.pickup }} → {{ trip.destination }}</p>
                     <p class="mb-1"><strong>Truck:</strong> {{ trip.truck_number }}</p>
                     <p class="mb-1"><strong>Total Fare:</strong> ₹{{ trip.total_fare|round(2) }}</p>

@@ -41,7 +41,7 @@
                         <td>
                             <code>{{ trip.id[:8] }}...</code>
                         </td>
-                        <td>{{ trip.customer }}</td>
+                        <td>{{ trip.customer_name }}</td>
                         <td>{{ trip.pickup }} → {{ trip.destination }}</td>
                         <td>{{ trip.truck_number }}</td>
                         <td>
@@ -58,7 +58,7 @@
                                 ₹{{ remaining|round(2) }}
                             </span>
                         </td>
-                        <td>{{ trip.timestamp[:10] }}</td>
+                        <td>{{ trip.timestamp.strftime('%Y-%m-%d') if trip.timestamp else 'N/A' }}</td>
                         <td>
                             <div class="btn-group" role="group">
                                 <a href="{{ url_for('trip_details', trip_id=trip.id) }}" class="btn btn-sm btn-outline-primary" title="View Details">

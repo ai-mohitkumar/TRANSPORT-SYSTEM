@@ -44,7 +44,7 @@
                         <td>{{ customer.email or 'N/A' }}</td>
                         <td>{{ customer.address or 'N/A' }}</td>
                         <td>
-                            {% if customer.get('average_rating') %}
+                            {% if customer.average_rating %}
                             <div class="d-flex align-items-center">
                                 {% for i in range(5) %}
                                 <i class="fas fa-star {{ 'text-warning' if i < customer.average_rating else 'text-muted' }}" style="font-size: 12px;"></i>
@@ -59,7 +59,7 @@
                             <span class="badge bg-info">{{ customer.total_trips }}</span>
                         </td>
                         <td>₹{{ customer.total_earnings|round(2) }}</td>
-                        <td>{{ customer.created_at[:10] }}</td>
+                        <td>{{ customer.created_at.strftime('%Y-%m-%d') if customer.created_at else '-' }}</td>
                         <td>
                             <a href="{{ url_for('customer_details', customer_id=customer.id) }}" class="btn btn-sm btn-outline-primary me-1" title="View Details">
                                 <i class="fas fa-eye"></i>

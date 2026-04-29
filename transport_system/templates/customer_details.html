@@ -63,7 +63,7 @@
                                     <hr>
                                     <div class="row">
                                         <div class="col-sm-4"><strong>Joined:</strong></div>
-                                        <div class="col-sm-8">{{ customer.created_at[:10] if customer.created_at else 'Unknown' }}</div>
+                                        <div class="col-sm-8">{{ customer.created_at.strftime('%Y-%m-%d') if customer.created_at else 'Unknown' }}</div>
                                     </div>
                                 </div>
                             </div>
@@ -108,7 +108,7 @@
                     </div>
 
                     <!-- Customer Ratings -->
-                    {% if customer.get('average_rating') %}
+                    {% if customer.average_rating %}
                     <div class="row mt-4">
                         <div class="col-md-6">
                             <div class="card">
@@ -166,7 +166,7 @@
                                                         </span>
                                                     </td>
                                                     <td>₹{{ "%.2f"|format(trip.total_fare) }}</td>
-                                                    <td>{{ trip.timestamp[:10] }}</td>
+                                                    <td>{{ trip.timestamp.strftime('%Y-%m-%d') }}</td>
                                                     <td>
                                                         <a href="{{ url_for('trip_details', trip_id=trip.id) }}" class="btn btn-sm btn-outline-primary">
                                                             <i class="fas fa-eye me-1"></i>View

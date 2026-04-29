@@ -7,10 +7,9 @@
 <style>
 #map { height: 600px; width: 100%; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
 .trucks-table { background: white; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-.truck-row:hover { background-color: #f8f9fa; }
-.status-online { color: #28a745; }
+.truck-row:hover { background-color: #f8f9fa; cursor: pointer; }
 </style>
-<script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&callback=initGoogleMap"></script>
+<script async defer src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_key }}&callback=initGoogleMap"></script>
 {% endblock %}
 
 {% block content %}
@@ -18,27 +17,23 @@
     <div class="row mb-4">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2><i class="fas fa-map-marked-alt text-primary me-2"></i>🚛 Live Truck Tracking - Google Maps</h2>
+                <h2><i class="fas fa-map-marked-alt text-primary me-2"></i>Live Truck Tracking - Google Maps</h2>
                 <div>
-                    <button class="btn btn-success me-2" onclick="autoRefreshToggle()">
-                        <i class="fas fa-{{ 'pause' if isAutoRefresh else 'play' }} me-1"></i>
-                        {{ 'Pause' if isAutoRefresh else 'Auto Refresh' }}
+                    <button class="btn btn-success me-2" onclick="autoRefreshToggle()" id="refreshBtn">
+                        <i class="fas fa-pause me-1"></i>Pause
                     </button>
                     <button class="btn btn-primary" onclick="fitAllTrucks()">
                         <i class="fas fa-search me-1"></i>Fit All Trucks
                     </button>
                 </div>
-            </div>
         </div>
-    </div>
 
     <div class="row">
         <div class="col-lg-9">
-            <div id="map"></div>
-        </div>
+            <div id="map" data-trucks="{{ active_drivers|map(attribute='truck.number')|list|tojson|forceescape }}"></div>
         <div class="col-lg-3">
             <div class="trucks-table p-3">
-                <h5 class="mb-3"><i class="fas fa-trucks me-2"></i>Active Trucks ({{ active_drivers|length }})</h5>
+                <h5 class="mb-3"><i class="fas fa-truck me-2"></i>Active Trucks ({{ active_drivers|length }})</h5>
                 <div id="trucks-list" class="list-group list-group-flush" style="max-height: 500px; overflow-y: auto;">
                     {% for driver in active_drivers %}
                     <div class="list-group-item truck-row px-0 py-2" onclick="centerOnTruck('{{ driver.truck.number }}')">
@@ -51,13 +46,10 @@
                                 <span id="status-{{ driver.truck.number }}" class="badge bg-secondary">Loading...</span>
                                 <br><small id="time-{{ driver.truck.number }}">Just now</small>
                             </div>
-                        </div>
                     </div>
                     {% endfor %}
                 </div>
-            </div>
         </div>
-    </div>
 </div>
 
 <script>
@@ -70,55 +62,46 @@ let refreshInterval;
 function initGoogleMap() {
     map = new google.maps.Map(document.getElementById('map'), {
         zoom: 10,
-        center: { lat: 28.6139, lng: 77.2090 }, // Delhi default
+        center: { lat: 28.6139, lng: 77.2090 },
         mapTypeId: 'roadmap',
-        styles: [
-            {
-                featureType: 'poi',
-                elementType: 'labels',
-                stylers: [{ visibility: 'off' }]
-            }
-        ]
+        styles: [{ featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] }]
     });
-
     loadAllTrucks();
     startAutoRefresh();
 }
 
 function loadAllTrucks() {
-    {% for driver in active_drivers %}
-    loadTruck('{{ driver.truck.number }}');
-    {% endfor %}
+    var mapDiv = document.getElementById('map');
+    var trucks = JSON.parse(mapDiv.dataset.trucks || '[]');
+    trucks.forEach(function(truckNumber) {
+        loadTruck(truckNumber);
+    });
 }
 
 function loadTruck(truckNumber) {
-    fetch(`/get_locations/${truckNumber}`)
-        .then(response => response.json())
-        .then(locations => {
+    fetch('/get_locations/' + truckNumber)
+        .then(function(response) { return response.json(); })
+        .then(function(locations) {
             if (locations.length > 0) {
-                const latest = locations[locations.length - 1];
+                var latest = locations[locations.length - 1];
                 updateTruckMarker(truckNumber, latest);
                 updateStatus(truckNumber, latest);
             } else {
                 updateStatus(truckNumber, null);
             }
         })
-        .catch(error => {
-            console.error(`Error loading ${truckNumber}:`, error);
+        .catch(function(error) {
+            console.error('Error loading ' + truckNumber + ':', error);
             updateStatus(truckNumber, null);
         });
 }
 
 function updateTruckMarker(truckNumber, location) {
-    const position = { lat: location.latitude, lng: location.longitude };
-    
-    // Remove old marker
+    var position = { lat: location.latitude, lng: location.longitude };
     if (truckMarkers[truckNumber]) {
         truckMarkers[truckNumber].setMap(null);
     }
-
-    // Create truck icon
-    const truckIcon = {
+    var truckIcon = {
         path: google.maps.SymbolPath.CIRCLE,
         scale: 12,
         fillColor: '#FF6B35',
@@ -126,50 +109,34 @@ function updateTruckMarker(truckNumber, location) {
         strokeColor: '#FFFFFF',
         strokeWeight: 3
     };
-
-    const marker = new google.maps.Marker({
+    var marker = new google.maps.Marker({
         position: position,
         map: map,
         title: truckNumber,
         icon: truckIcon,
-        label: truckNumber.substring(2), // Show short number
         optimized: false
     });
-
     truckMarkers[truckNumber] = marker;
 
-    // Info window
-    const contentString = `
-        <div style="min-width: 200px;">
-            <h6 style="margin: 0 0 8px 0; color: #FF6B35;">
-                <i class="fas fa-truck me-1"></i>${truckNumber}
-            </h6>
-            <p><strong>Driver:</strong> ${location.driver_name}</p>
-            <p><strong>Location:</strong> ${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}</p>
-            <p><strong>Speed:</strong> ${location.speed ? (location.speed).toFixed(1) + ' km/h' : 'N/A'}</p>
-            <p><strong>Updated:</strong> ${new Date(location.timestamp).toLocaleString()}</p>
-        </div>
-    `;
+    var contentString = '<div style="min-width:200px;">' +
+        '<h6 style="margin:0 0 8px 0;color:#FF6B35;"><i class="fas fa-truck me-1"></i>' + truckNumber + '</h6>' +
+        '<p><strong>Driver:</strong> ' + (location.driver_name || 'N/A') + '</p>' +
+        '<p><strong>Location:</strong> ' + location.latitude.toFixed(4) + ', ' + location.longitude.toFixed(4) + '</p>' +
+        '<p><strong>Speed:</strong> ' + (location.speed ? location.speed.toFixed(1) + ' km/h' : 'N/A') + '</p>' +
+        '<p><strong>Updated:</strong> ' + new Date(location.timestamp).toLocaleString() + '</p>' +
+        '</div>';
 
-    const infowindow = new google.maps.InfoWindow({
-        content: contentString
-    });
-
-    marker.addListener('click', () => {
-        infowindow.open(map, marker);
-    });
-
+    var infowindow = new google.maps.InfoWindow({ content: contentString });
+    marker.addListener('click', function() { infowindow.open(map, marker); });
     infoWindows[truckNumber] = infowindow;
 
-    // Animate marker
     marker.setAnimation(google.maps.Animation.DROP);
-    setTimeout(() => marker.setAnimation(null), 1000);
+    setTimeout(function() { marker.setAnimation(null); }, 1000);
 }
 
 function updateStatus(truckNumber, location) {
-    const statusEl = document.getElementById(`status-${truckNumber}`);
-    const timeEl = document.getElementById(`time-${truckNumber}`);
-    
+    var statusEl = document.getElementById('status-' + truckNumber);
+    var timeEl = document.getElementById('time-' + truckNumber);
     if (location) {
         statusEl.className = 'badge bg-success';
         statusEl.innerHTML = '<i class="fas fa-circle me-1"></i>Online';
@@ -191,33 +158,33 @@ function centerOnTruck(truckNumber) {
 
 function fitAllTrucks() {
     if (Object.keys(truckMarkers).length === 0) return;
-
-    const bounds = new google.maps.LatLngBounds();
-    Object.values(truckMarkers).forEach(marker => {
-        bounds.extend(marker.getPosition());
-    });
-    
+    var bounds = new google.maps.LatLngBounds();
+    Object.values(truckMarkers).forEach(function(marker) { bounds.extend(marker.getPosition()); });
     map.fitBounds(bounds, { padding: 50 });
 }
 
 function startAutoRefresh() {
-    refreshInterval = setInterval(() => {
-        if (isAutoRefresh) {
-            loadAllTrucks();
-        }
-    }, 15000); // 15 seconds
+    refreshInterval = setInterval(function() {
+        if (isAutoRefresh) { loadAllTrucks(); }
+    }, 15000);
 }
 
 function autoRefreshToggle() {
     isAutoRefresh = !isAutoRefresh;
+    var btn = document.getElementById('refreshBtn');
     if (!isAutoRefresh) {
         clearInterval(refreshInterval);
+        btn.innerHTML = '<i class="fas fa-play me-1"></i>Auto Refresh';
+        btn.classList.remove('btn-success');
+        btn.classList.add('btn-outline-success');
     } else {
         startAutoRefresh();
+        btn.innerHTML = '<i class="fas fa-pause me-1"></i>Pause';
+        btn.classList.remove('btn-outline-success');
+        btn.classList.add('btn-success');
     }
 }
 
-// Fallback if Google Maps fails to load
 window.initGoogleMap = function() {};
 </script>
 {% endblock %}

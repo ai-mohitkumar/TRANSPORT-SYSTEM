@@ -19,7 +19,7 @@
             </div>
             <div class="card-body">
                 <div class="alert alert-info">
-                    <strong>Trip:</strong> {{ trip.customer }} ({{ trip.pickup }} → {{ trip.destination }})<br>
+                    <strong>Trip:</strong> {{ trip.customer_name }} ({{ trip.pickup }} → {{ trip.destination }})<br>
                     <strong>Total Fare:</strong> ₹{{ trip.total_fare }}<br>
                     <strong>Already Paid:</strong> ₹{{ trip.payments|sum(attribute='amount') }}<br>
                     <strong>Remaining:</strong> ₹{{ trip.total_fare - trip.payments|sum(attribute='amount') }}
