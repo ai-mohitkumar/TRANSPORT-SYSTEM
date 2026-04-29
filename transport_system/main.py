@@ -42,6 +42,8 @@ if not os.path.exists(UPLOAD_FOLDER):
 
 # Google Maps API Key (set via environment variable)
 GOOGLE_MAPS_API_KEY = os.environ.get('GOOGLE_MAPS_API_KEY', '')
+app.config.from_prefixed_env()
+
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
