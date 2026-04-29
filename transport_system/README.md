@@ -1,41 +1,181 @@
-# KALAWATI TRANSPORT - Transport Management System 🚛
+# KALAWATI TRANSPORT
+[![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/)
+[![Flask](https://img.shields.io/badge/Flask-2.3.3-green.svg)](https://flask.palletsprojects.com/)
+[![SQLite](https://img.shields.io/badge/SQLite-3-yellow.svg)](https://www.sqlite.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Live Demo](https://img.shields.io/badge/Deployment-Render-orange.svg)](https://kalawati-transport.onrender.com)
 
-## 🎯 Quick Start
+## 🚛 Comprehensive Transport Management System
 
-**Run the app:**
-```cmd
-cd transport_system
-..\venv_local\Scripts\python.exe main.py
-```
+**KALAWATI TRANSPORT** is a full-featured web application for managing transport operations. Handle trips, customers, trucks, payments, live GPS tracking, PDF reports, and more - all in one place.
 
-**Open in browser:** http://localhost:5000
+![Dashboard Screenshot](https://via.placeholder.com/800x400/1a5276/ffffff?text=Dashboard+Preview)
 
 ## ✨ Features
-- **Chart.js Dashboard** — Monthly earnings trend, trip status pie chart, top customers bar chart
-- **Google Maps Integration** — Auto-distance calculation when creating trips
-- **Google Maps Live Tracking** — Real-time truck location tracking on Google Maps
-- **Full Trip Lifecycle** — Booking → Distance → Fare → Payment → Delivery
-- **Customer & Truck Management** — With statistics and ratings
-- **PDF Reports** — Financial summary, trip details, customer & truck reports
-- **Admin/Driver Login** — Role-based access control
-- **Document Upload** — Truck & driver document management with expiry tracking
 
-## 🗺️ Google Maps Setup (Optional)
-To enable Google Maps features, set your API key:
-```cmd
-set GOOGLE_MAPS_API_KEY=your_api_key_here
+- **📊 Interactive Dashboard** - Chart.js charts: Monthly earnings, trip status pie, top customers bar
+- **🗺️ Google Maps Integration** - Auto-distance calculation + real-time live tracking
+- **🔄 Complete Trip Lifecycle** - Book → Calculate Distance/Fare → Add Payments/Expenses → Track → Deliver → Rate
+- **👥 Customer Management** - Add/edit customers, view stats, ratings, trip history
+- **🚚 Truck Fleet Management** - Track availability, earnings, ratings, document uploads
+- **💰 Financial Tracking** - Payments, expenses, pending dues, profit calculations
+- **📄 PDF Reports** - Summary, trips, customers, trucks (downloadable)
+- **🔐 Role-Based Auth** - Admin panel + Driver dashboard
+- **📱 Live GPS Tracking** - Real-time location updates with history
+- **📎 Document Management** - Upload truck/driver docs with expiry tracking
+- **🔍 Smart Search** - Filter trips by customer, truck, status
+- **⭐ Ratings System** - Rate customers and trucks post-delivery
+- **📈 Audit Logs** - Track all create/update/delete actions
+- **⚡ JSON to SQLite Migration** - Seamless data import from legacy JSON files
+
+## 🛠️ Tech Stack
+
+| Category | Technologies |
+|----------|--------------|
+| Backend | Python 3.8+, Flask 2.3.3, SQLAlchemy, Flask-Migrate |
+| Database | SQLite (kalawati.db), legacy JSON support |
+| Frontend | HTML5, Bootstrap 5, Chart.js, Google Maps JavaScript API |
+| Reports | ReportLab (PDF generation) |
+| Other | Werkzeug, Gunicorn (production), Ngrok (tunneling) |
+
+## 🚀 Local Setup
+
+### 1. Prerequisites
+- Python 3.8+
+- Git
+
+### 2. Clone & Setup
+```bash
+git clone <your-repo> transport_system
+cd transport_system
 ```
-Then restart the app.
+
+### 3. Virtual Environment (Recommended)
+```bash
+# Windows
+python -m venv venv_local
+venv_local\Scripts\activate
+
+# macOS/Linux
+python3 -m venv venv_local
+source venv_local/bin/activate
+```
+
+### 4. Install Dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### 5. Database Setup
+Database auto-migrates from JSON files (`users.json`, `customers.json`, etc.) to `kalawati.db` on first run.
+
+### 6. Google Maps (Optional)
+```bash
+# Windows
+set GOOGLE_MAPS_API_KEY=your_api_key_here
+
+# Or in .env file
+echo GOOGLE_MAPS_API_KEY=your_api_key_here > .env
+```
+
+### 7. Run the App
+```bash
+python main.py
+```
+**Open:** http://localhost:5000
+
+### 8. First Login
+1. Click **Register** → Create admin account
+2. Login → Access full dashboard
+
+## 🌐 Deployment
+
+### Render.com (Free Tier)
+1. Push to GitHub
+2. Connect repo in Render
+3. Build: `pip install -r requirements.txt`
+4. Start: `gunicorn main:app`
+5. Env: `GOOGLE_MAPS_API_KEY=your_key`
+
+### Vercel (via vercel.json)
+```bash
+npm i -g vercel
+vercel --prod
+```
+
+### Heroku
+```bash
+git push heroku main
+heroku config:set GOOGLE_MAPS_API_KEY=your_key
+```
+
+## 🗃️ Database & Data Migration
+
+- **Legacy:** JSON files (`users.json`, `trips.json`, etc.)
+- **Production:** SQLite (`kalawati.db`)
+- **Migration:** Auto-runs `migrate_json_to_sqlite()` on first launch
+- **Models:** See `models.py` (User, Trip, Customer, Truck, Payment, Expense, Location, Document)
+
+## 🔌 Key API Endpoints
+
+| Endpoint | Description | Auth |
+|----------|-------------|------|
+| `/api/dashboard_stats` | Chart.js data | ✅ |
+| `/api/calculate_distance` | Google Maps distance | ✅ |
+| `/get_locations/:truck` | GPS location history | ✅ |
+| `/update_location` | POST driver GPS | ✅ |
+| `/download_report/:type` | PDF reports | ✅ |
 
 ## 📁 Project Structure
-- `main.py` — Flask backend with all routes
-- `models.py` — SQLAlchemy database models
-- `templates/` — HTML templates
-- `static/` — Logo and assets
-- `uploads/` — Uploaded documents
+```
+transport_system/
+├── main.py              # Flask app + all routes
+├── models.py            # SQLAlchemy ORM models
+├── requirements.txt     # Dependencies
+├── kalawati.db          # SQLite database
+├── templates/           # HTML Jinja2 templates
+├── static/              # CSS/JS/images
+├── uploads/             # Documents
+├── *.json               # Legacy data (auto-migrated)
+├── Procfile             # Heroku deployment
+├── runtime.txt          # Python version
+└── vercel.json          # Vercel config
+```
 
-## 🔗 First Time Use
-1. Run the app
-2. Go to http://localhost:5000
-3. Click **Register** to create an account
-4. Login and access the dashboard
+## 📸 Screenshots
+
+1. **Dashboard**: Earnings charts, recent trips, pending payments
+2. **Trip Creation**: Auto-distance via Google Maps
+3. **Live Tracking**: Real-time GPS on Google Maps
+4. **PDF Reports**: Professional financial summaries
+5. **Driver Dashboard**: Assigned trips + GPS update
+
+*(Add actual screenshots to `/static/screenshots/` and link here)*
+
+## 🤝 Contributing
+
+1. Fork the repo
+2. Create feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
+5. Open Pull Request
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+
+## 📋 TODOs
+- See [TODO.md](TODO.md)
+- [TODO_launch.md](TODO_launch.md)
+- [TODO_single_main.md](TODO_single_main.md)
+
+## 📄 License
+This project is MIT licensed. See [LICENSE](LICENSE) for details.
+
+## 🙏 Acknowledgments
+- Flask & SQLAlchemy teams
+- Chart.js, Bootstrap, Google Maps
+- ReportLab for PDF generation
+
+---
+
+⭐ **Star this repo if useful!** 🚀
+
