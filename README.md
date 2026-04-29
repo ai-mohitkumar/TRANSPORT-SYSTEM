@@ -7,12 +7,7 @@
 
 
 
-\*\*KALAWATI TRANSPORT\*\* is a full-featured web application for managing transport operations. Handle trips, customers, trucks, payments, live GPS tracking, PDF reports, and more - all in one place.
-
-
-
-!\[Dashboard Screenshot](https://via.placeholder.com/800x400/1a5276/ffffff?text=Dashboard+Preview)
-
+\*\*KALAWATI TRANSPORT\*\* is a full-featured web application for managing transport operations. Handle trips, customers, trucks, payments, live GPS tracking, PDF reports, and more - all in one place
 
 
 \## ✨ Features
