@@ -1,0 +1,17 @@
+@'
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "transport_system/main.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "transport_system/main.py"
+    }
+  ]
+}
+'@ | Set-Content -Encoding UTF8 vercel.json
