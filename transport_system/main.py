@@ -1313,7 +1313,6 @@ def migrate_json_to_sqlite():
     update_truck_stats()
     print("Migration complete! JSON data imported into SQLite.")
 
-
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
@@ -1321,4 +1320,6 @@ if __name__ == '__main__':
             print("Running JSON to SQLite migration...")
             migrate_json_to_sqlite()
     app.run(debug=True, host='0.0.0.0', port=5000)
-        
+
+# 👇 ADD THIS OUTSIDE (NO INDENT)
+handler = app
