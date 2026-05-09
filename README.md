@@ -176,13 +176,16 @@ python main.py
 
 3\. Build: `pip install -r requirements.txt`
 
-4\. Start: `gunicorn main:app`
+4\. Start: `gunicorn transport_system.main:app`
 
-5\. Env: `GOOGLE\_MAPS\_API\_KEY=your\_key`
+5\. Env:
+   - `GOOGLE\_MAPS\_API\_KEY=your\_key` (optional)
+   - `SECRET\_KEY=your\_secret` (recommended)
 
 
 
 \### Vercel (via vercel.json)
+
 
 ```bash
 
@@ -236,7 +239,7 @@ heroku config:set GOOGLE\_MAPS\_API\_KEY=your\_key
 
 | `/update\_location` | POST driver GPS | ✅ |
 
-| `/download\_report/:type` | PDF reports | ✅ |
+| `/download_report/:report_type` | PDF reports | ✅ |
 
 
 
@@ -246,9 +249,10 @@ heroku config:set GOOGLE\_MAPS\_API\_KEY=your\_key
 
 transport\_system/
 
-├── main.py              # Flask app + all routes
+├── transport_system/main.py  # Flask app + all routes
 
-├── models.py            # SQLAlchemy ORM models
+├── transport_system/models.py  # SQLAlchemy ORM models
+
 
 ├── requirements.txt     # Dependencies
 

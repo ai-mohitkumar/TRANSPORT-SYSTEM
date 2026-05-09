@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}Admin — Webhook Events{% endblock %}
+
+{% block content %}
+<div class="page-header d-print-none mb-4">
+  <div class="row align-items-center">
+    <div class="col">
+      <h2 class="page-title">Webhook Events</h2>
+      <div class="page-subtitle text-muted">Recent webhook events and raw log tail</div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-12">
+    <div class="card mb-4">
+      <div class="card-body">
+        {% if events %}
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Provider</th>
+                <th>Event</th>
+                <th>Hash</th>
+                <th>Status</th>
+                <th>Attempts</th>
+                <th>Processed At</th>
+                <th>Error</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for e in events %}
+              <tr>
+                <td>{{ e.created_at.strftime('%Y-%m-%d %H:%M:%S') if e.created_at else '' }}</td>
+                <td>{{ e.provider }}</td>
+                <td>{{ e.event_type }}</td>
+                <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ e.event_hash }}</td>
+                <td>{{ e.status }}</td>
+                <td>{{ e.attempts }}</td>
+                <td>{{ e.processed_at.strftime('%Y-%m-%d %H:%M:%S') if e.processed_at else '' }}</td>
+                <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ e.error or '' }}</td>
+                <td>
+                  <a href="{{ url_for('admin_webhook_detail', event_id=e.id) }}" class="btn btn-sm btn-outline-primary">Details</a>
+                  <form method="POST" action="{{ url_for('admin_webhook_replay', event_id=e.id) }}" style="display:inline" onsubmit="return confirm('Replay this event?');">
+                    <button class="btn btn-sm btn-outline-success">Replay</button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p class="text-muted">No webhook events recorded yet.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0">Raw Log Tail (razorpay.log)</h5>
+      </div>
+      <div class="card-body">
+        <pre style="max-height:480px;overflow:auto;background:#111;color:#eee;padding:12px;border-radius:6px;">{{ webhook_log }}</pre>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

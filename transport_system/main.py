@@ -2,6 +2,7 @@ import json
 import uuid
 import os
 import requests
+from dotenv import load_dotenv
 from datetime import datetime, timedelta
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, send_file, send_from_directory
 from functools import wraps
@@ -13,11 +14,74 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.units import inch
 from io import BytesIO
 from werkzeug.utils import secure_filename
+from werkzeug.security import generate_password_hash, check_password_hash
 
-from models import db, User, Customer, Truck, Trip, Payment, Expense, Location, Document, AuditLog, Rating
+from models import db, User, Customer, Truck, Trip, Payment, Expense, Location, Document, AuditLog, Rating, WebhookEvent
 from flask_migrate import Migrate
+import razorpay
 
 app = Flask(__name__)
+
+# App config & DB init
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('SQLALCHEMY_DATABASE_URI', 'sqlite:///kalawati.db')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret')
+db.init_app(app)
+migrate = Migrate(app, db)
+
+# External service keys
+GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY', '')
+RAZORPAY_KEY_ID = os.getenv('RAZORPAY_KEY_ID', '')
+RAZORPAY_KEY_SECRET = os.getenv('RAZORPAY_KEY_SECRET', '')
+
+# Init razorpay client if keys present
+razorpay_client = None
+try:
+    if RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET:
+        razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
+except Exception:
+    razorpay_client = None
+
+# Uploads config
+app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(__file__), 'uploads')
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'pdf', 'doc', 'docx'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def log_audit(action, entity, entity_id, old_values, new_values=None):
+    try:
+        entry = AuditLog(user_id=session.get('user_id'), username=session.get('username'), action=action,
+                         entity_type=entity, entity_id=str(entity_id), old_values=json.dumps(old_values),
+                         new_values=json.dumps(new_values) if new_values is not None else None)
+        db.session.add(entry)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+
+def update_truck_stats():
+    try:
+        for truck in Truck.query.all():
+            trips = Trip.query.filter_by(truck_number=truck.number, status='Delivered').all()
+            truck.total_trips = len(trips)
+            truck.total_earnings = sum((t.total_fare or 0.0) for t in trips)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+
+def update_customer_stats():
+    try:
+        for customer in Customer.query.all():
+            trips = Trip.query.filter_by(customer_id=customer.id, status='Delivered').all()
+            customer.total_trips = len(trips)
+            customer.total_earnings = sum((t.total_fare or 0.0) for t in trips)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
 
 @app.template_filter('datetimeformat')
 def datetimeformat(value):
@@ -25,109 +89,192 @@ def datetimeformat(value):
         return value.strftime('%Y-%m-%d %H:%M:%S')
     return ""
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///kalawati.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.secret_key = 'transport_system_secret_key_2024_pro'
+# Webhook log directory
+WEBHOOK_LOG_DIR = os.path.join(os.path.dirname(__file__), 'webhook_logs')
+os.makedirs(WEBHOOK_LOG_DIR, exist_ok=True)
 
-db.init_app(app)
-migrate = Migrate(app, db)
+def write_webhook_log(provider, event, payload, signature, status='received'):
+    try:
+        path = os.path.join(WEBHOOK_LOG_DIR, f'{provider}.log')
+        entry = {
+            'ts': datetime.utcnow().isoformat(),
+            'provider': provider,
+            'event': event,
+            'status': status,
+            'signature': signature,
+            'payload': json.loads(payload) if isinstance(payload, str) else payload
+        }
+        with open(path, 'a', encoding='utf-8') as f:
+            f.write(json.dumps(entry, ensure_ascii=False) + '\n')
+    except Exception:
+        pass
 
-# Upload folder
-UPLOAD_FOLDER = 'uploads'
-ALLOWED_EXTENSIONS = {'pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'}
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
-
-# Google Maps API Key (set via environment variable)
-GOOGLE_MAPS_API_KEY = os.environ.get('GOOGLE_MAPS_API_KEY', '')
-app.config.from_prefixed_env()
-
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-def hash_password(password):
-    return hashlib.sha256(password.encode()).hexdigest()
-
-def verify_password(password, hashed):
-    return hash_password(password) == hashed
 
 def login_required(f):
     @wraps(f)
-    def decorated_function(*args, **kwargs):
+    def decorated(*args, **kwargs):
         if 'user_id' not in session:
+            if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.accept_mimetypes.best == 'application/json':
+                return jsonify({'error': 'authentication_required'}), 401
+            flash('Please login to continue', 'error')
             return redirect(url_for('login'))
         return f(*args, **kwargs)
-    return decorated_function
+    return decorated
+
 
 def admin_required(f):
     @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'user_id' not in session:
-            return redirect(url_for('login'))
-        user = User.query.get(session['user_id'])
-        if not user or user.role != 'admin':
-            flash('Admin access required!', 'error')
+    def decorated(*args, **kwargs):
+        if session.get('role') != 'admin':
+            if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.accept_mimetypes.best == 'application/json':
+                return jsonify({'error': 'admin_required'}), 403
+            flash('Admin access required', 'error')
             return redirect(url_for('dashboard'))
         return f(*args, **kwargs)
-    return decorated_function
+    return decorated
 
-def log_audit(action, entity_type, entity_id, old_values=None, new_values=None):
-    audit = AuditLog(
-        user_id=session.get('user_id'),
-        username=session.get('username'),
-        action=action,
-        entity_type=entity_type,
-        entity_id=str(entity_id),
-        old_values=json.dumps(old_values) if old_values else None,
-        new_values=json.dumps(new_values) if new_values else None
-    )
-    db.session.add(audit)
-    db.session.commit()
 
-def recalculate_fare(trip):
-    """Auto-recalculate fare when distance or rate changes"""
-    if trip.distance_km and trip.rate_per_km:
-        trip.total_fare = (trip.distance_km * trip.rate_per_km) + trip.loading_charges
-    return trip
+# Password helpers
+def hash_password(password: str) -> str:
+    if not password:
+        return ''
+    return generate_password_hash(password)
 
-def update_customer_stats():
-    customers = Customer.query.all()
-    for customer in customers:
-        customer.total_trips = Trip.query.filter_by(customer_name=customer.name, status='Delivered').count()
-        customer.total_earnings = db.session.query(db.func.sum(Trip.total_fare)).filter_by(
-            customer_name=customer.name, status='Delivered').scalar() or 0.0
-    db.session.commit()
 
-def update_truck_stats():
-    trucks = Truck.query.all()
-    for truck in trucks:
-        truck.total_trips = Trip.query.filter_by(truck_number=truck.number, status='Delivered').count()
-        truck.total_earnings = db.session.query(db.func.sum(Trip.total_fare)).filter_by(
-            truck_number=truck.number, status='Delivered').scalar() or 0.0
-        active = Trip.query.filter_by(truck_number=truck.number).filter(
-            Trip.status.in_(['In Transit', 'Booked'])).first()
-        truck.status = 'Busy' if active else 'Available'
-    db.session.commit()
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    if not plain_password or not hashed_password:
+        return False
+    return check_password_hash(hashed_password, plain_password)
 
-# ===== PUBLIC LANDING PAGE =====
 
-@app.route('/')
-def index():
-    if 'user_id' in session:
-        return redirect(url_for('dashboard'))
-    total_trips = Trip.query.count()
-    total_customers = Customer.query.count()
-    total_trucks = Truck.query.count()
-    completed_trips = Trip.query.filter_by(status='Delivered').count()
-    return render_template('index.html',
-                         total_trips=total_trips,
-                         total_customers=total_customers,
-                         total_trucks=total_trucks,
-                         completed_trips=completed_trips)
+def process_razorpay_webhook(body, signature, skip_signature=False):
+    """Process a raw Razorpay webhook payload safely and idempotently.
+    Returns (True, info) on success or (False, error_msg) on failure.
+    """
+    try:
+        # compute body hash for deduplication
+        event_hash = hashlib.sha256((body or '').encode('utf-8')).hexdigest()
+        existing = WebhookEvent.query.filter_by(event_hash=event_hash).first()
+        if existing and existing.status == 'processed':
+            return True, {'info': 'already_processed', 'event_id': existing.id}
 
+        # create record if not exists
+        if not existing:
+            e = WebhookEvent(event_hash=event_hash, payload=body, signature=signature, status='received', attempts=0)
+            db.session.add(e)
+            db.session.commit()
+        else:
+            e = existing
+
+        write_webhook_log('razorpay', None, body, signature, status='received')
+
+        if not skip_signature:
+            secret = os.getenv('RAZORPAY_WEBHOOK_SECRET')
+            if secret:
+                try:
+                    razorpay_client.utility.verify_webhook_signature(body, signature, secret)
+                except Exception as ex:
+                    e.attempts = e.attempts + 1
+                    e.status = 'signature_failed'
+                    e.error = str(ex)
+                    db.session.commit()
+                    write_webhook_log('razorpay', 'signature_failed', body, signature, status='signature_failed')
+                    return False, 'signature_verification_failed'
+
+        # parse payload
+        try:
+            payload = json.loads(body or '{}')
+        except Exception:
+            payload = {}
+
+        event = payload.get('event')
+        data = payload.get('payload', {})
+        payment_entity = None
+        # extract common payment entity
+        if isinstance(data, dict):
+            payment_entity = data.get('payment', {}).get('entity') if data.get('payment') else None
+            # fallback to nested structures
+            if not payment_entity:
+                for k in ('payment', 'invoice', 'order'):
+                    if data.get(k) and isinstance(data.get(k), dict):
+                        payment_entity = data.get(k).get('entity') or data.get(k)
+                        break
+
+        order_id = None
+        payment_id = None
+        amount = None
+        trip_id = None
+
+        if payment_entity and isinstance(payment_entity, dict):
+            payment_id = payment_entity.get('id') or payment_entity.get('payment_id')
+            order_id = payment_entity.get('order_id') or payment_entity.get('receipt')
+            notes = payment_entity.get('notes') or {}
+            if notes:
+                trip_id = notes.get('trip_id')
+            amt = payment_entity.get('amount')
+            if amt:
+                try:
+                    amount = float(amt) / 100.0
+                except Exception:
+                    amount = None
+
+        # try to reconcile trip id from order notes if not present
+        if not trip_id and order_id:
+            try:
+                order = razorpay_client.order.fetch(order_id)
+                notes = order.get('notes') or {}
+                trip_id = notes.get('trip_id')
+            except Exception:
+                pass
+
+        # idempotent payment creation
+        if payment_id:
+            existing_payment = Payment.query.filter_by(gateway_payment_id=payment_id).first()
+            if existing_payment:
+                e.status = 'processed'
+                e.attempts = e.attempts + 1
+                db.session.commit()
+                return True, {'info': 'payment_already_recorded', 'payment_id': existing_payment.id}
+
+        # create payment record if we have enough info
+        payment = Payment(
+            trip_id=int(trip_id) if trip_id else None,
+            type='online',
+            amount=amount or 0.0,
+            method='razorpay',
+            gateway='Razorpay',
+            gateway_order_id=order_id,
+            gateway_payment_id=payment_id,
+            payment_status='Completed'
+        )
+        db.session.add(payment)
+        db.session.commit()
+
+        # Update trip status if fully paid
+        if payment.trip_id:
+            trip = Trip.query.get(payment.trip_id)
+            if trip:
+                total_paid = db.session.query(db.func.sum(Payment.amount)).filter_by(trip_id=trip.id).scalar() or 0.0
+                remaining = trip.total_fare - total_paid
+                if remaining <= 0:
+                    trip.status = 'Delivered'
+                db.session.commit()
+
+        e.status = 'processed'
+        e.attempts = e.attempts + 1
+        db.session.commit()
+        write_webhook_log('razorpay', event, body, signature, status='processed')
+        return True, {'info': 'processed', 'event_id': e.id}
+    except Exception as ex:
+        try:
+            e.error = str(ex)
+            e.status = 'failed'
+            e.attempts = getattr(e, 'attempts', 0) + 1
+            db.session.commit()
+        except Exception:
+            pass
+        write_webhook_log('razorpay', 'processing_failed', body, signature, status='failed')
+        return False, str(ex)
 # ===== AUTHENTICATION =====
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -147,6 +294,13 @@ def login():
         else:
             flash('Invalid username or password!', 'error')
     return render_template('login.html')
+
+
+@app.route('/')
+def index():
+    if session.get('user_id'):
+        return redirect(url_for('dashboard'))
+    return redirect(url_for('login'))
 
 @app.route('/logout')
 def logout():
@@ -344,6 +498,157 @@ def create_trip():
         return redirect(url_for('trips'))
     return render_template('create_trip.html', google_maps_key=GOOGLE_MAPS_API_KEY)
 
+
+# ===== RAZORPAY PAYMENT ROUTES =====
+@app.route('/create-payment/<int:trip_id>', methods=['POST'])
+@login_required
+def create_payment(trip_id):
+    if not razorpay_client:
+        return jsonify({'error': 'Razorpay not configured'}), 400
+    trip = Trip.query.get_or_404(trip_id)
+    paid = db.session.query(db.func.sum(Payment.amount)).filter_by(trip_id=trip.id).scalar() or 0.0
+    remaining = max(0, trip.total_fare - paid)
+    if remaining <= 0:
+        return jsonify({'error': 'No pending amount'}), 400
+
+    amount_paise = int(round(remaining * 100))
+    order = razorpay_client.order.create({
+        'amount': amount_paise,
+        'currency': 'INR',
+        'payment_capture': 1,
+        'notes': {'trip_id': trip.id}
+    })
+
+    return jsonify({
+        'order_id': order.get('id'),
+        'amount': amount_paise,
+        'key': RAZORPAY_KEY_ID,
+        'trip_id': trip.id
+    })
+
+
+@app.route('/verify-payment', methods=['POST'])
+@login_required
+def verify_payment():
+    if not razorpay_client:
+        return jsonify({'error': 'Razorpay not configured'}), 400
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Invalid payload'}), 400
+    try:
+        razorpay_client.utility.verify_payment_signature({
+            'razorpay_order_id': data['razorpay_order_id'],
+            'razorpay_payment_id': data['razorpay_payment_id'],
+            'razorpay_signature': data['razorpay_signature']
+        })
+
+        # find trip by order notes or by trip_id if sent
+        trip = None
+        trip_id = data.get('trip_id') or request.args.get('trip_id')
+        if not trip_id:
+            try:
+                # try to fetch order to read notes
+                order = razorpay_client.order.fetch(data.get('razorpay_order_id'))
+                notes = order.get('notes') or {}
+                trip_id = notes.get('trip_id')
+            except Exception:
+                trip_id = None
+        if trip_id:
+            trip = Trip.query.get(trip_id)
+
+        payment = Payment(
+            trip_id=trip.id if trip else None,
+            type='online',
+            amount=0.0,
+            method='razorpay',
+            gateway='Razorpay',
+            gateway_order_id=data.get('razorpay_order_id'),
+            gateway_payment_id=data.get('razorpay_payment_id'),
+            payment_status='Completed'
+        )
+
+        # If we can fetch payment details to get amount, try that
+        try:
+            pay = razorpay_client.payment.fetch(data.get('razorpay_payment_id'))
+            amt = pay.get('amount')
+            if amt:
+                payment.amount = float(amt) / 100.0
+        except Exception:
+            pass
+
+        db.session.add(payment)
+        db.session.commit()
+
+        # Update trip pending/advance if trip present
+        if trip:
+            # recalc remaining
+            total_paid = db.session.query(db.func.sum(Payment.amount)).filter_by(trip_id=trip.id).scalar() or 0.0
+            remaining = trip.total_fare - total_paid
+            if remaining <= 0:
+                trip.status = 'Delivered'
+            db.session.commit()
+
+        return jsonify({'success': True})
+    except razorpay.errors.SignatureVerificationError:
+        return jsonify({'error': 'Signature verification failed'}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/razorpay/webhook', methods=['POST'])
+def razorpay_webhook():
+    # get raw body and signature
+    body = request.get_data(as_text=True)
+    signature = request.headers.get('X-Razorpay-Signature') or request.headers.get('x-razorpay-signature')
+
+    ok, resp = process_razorpay_webhook(body, signature, skip_signature=False)
+    if ok:
+        return jsonify(resp), 200
+    else:
+        return jsonify({'error': resp}), 400
+
+@app.route('/admin/webhooks')
+@admin_required
+def admin_webhooks():
+    """Simple admin view to inspect webhook events and raw log tail."""
+    events = WebhookEvent.query.order_by(WebhookEvent.created_at.desc()).limit(200).all()
+    log_path = os.path.join(WEBHOOK_LOG_DIR, 'razorpay.log')
+    webhook_log = ''
+    if os.path.exists(log_path):
+        try:
+            with open(log_path, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+                webhook_log = ''.join(lines[-200:])
+        except Exception:
+            webhook_log = 'Unable to read webhook log file.'
+
+    return render_template('admin_webhooks.html', events=events, webhook_log=webhook_log)
+
+@app.route('/admin/webhooks/<event_id>')
+@admin_required
+def admin_webhook_detail(event_id):
+    e = WebhookEvent.query.get_or_404(event_id)
+    # try to pretty format payload
+    pretty = ''
+    try:
+        pretty = json.dumps(json.loads(e.payload), indent=2, ensure_ascii=False)
+    except Exception:
+        pretty = e.payload or ''
+    return render_template('admin_webhook_detail.html', event=e, pretty_payload=pretty)
+
+@app.route('/admin/webhooks/<event_id>/replay', methods=['POST'])
+@admin_required
+def admin_webhook_replay(event_id):
+    e = WebhookEvent.query.get_or_404(event_id)
+    # replay by calling processor with skip_signature True
+    ok, resp = process_razorpay_webhook(e.payload or '', e.signature or '', skip_signature=True)
+    if ok:
+        flash('Replay succeeded.', 'success')
+    else:
+        flash(f'Replay failed: {resp}', 'error')
+    return redirect(url_for('admin_webhook_detail', event_id=event_id))
+
+
 @app.route('/trips')
 @login_required
 def trips():
@@ -361,6 +666,81 @@ def trip_details(trip_id):
                          total_paid=total_paid,
                          total_expenses=total_expenses,
                          net_profit=net_profit)
+
+
+@app.route('/invoice/<trip_id>/download')
+@login_required
+def download_invoice(trip_id):
+    trip = Trip.query.get_or_404(trip_id)
+    payments = Payment.query.filter_by(trip_id=trip.id).all()
+    expenses = Expense.query.filter_by(trip_id=trip.id).all()
+
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36)
+    styles = getSampleStyleSheet()
+    elems = []
+
+    elems.append(Paragraph('KALAWATI TRANSPORT', styles['Title']))
+    elems.append(Paragraph('Invoice for Trip', styles['h3']))
+    elems.append(Spacer(1, 12))
+
+    # Trip meta
+    meta_data = [
+        ['Trip ID', trip.id],
+        ['Customer', trip.customer_name],
+        ['Route', f"{trip.pickup} → {trip.destination}"],
+        ['Truck', trip.truck_number],
+        ['Date', trip.timestamp.strftime('%Y-%m-%d')]
+    ]
+    t = Table(meta_data, hAlign='LEFT')
+    t.setStyle(TableStyle([('GRID', (0,0), (-1,-1), 0.5, colors.grey), ('BACKGROUND',(0,0),(0,-1),colors.whitesmoke)]))
+    elems.append(t)
+    elems.append(Spacer(1, 12))
+
+    # Charges table
+    charges = []
+    charges.append(['Description', 'Amount (₹)'])
+    charges.append(['Base Fare', f"{trip.total_fare - trip.loading_charges:.2f}"])
+    charges.append(['Loading Charges', f"{trip.loading_charges:.2f}"])
+    for exp in expenses:
+        charges.append([f"Expense: {exp.type}", f"{exp.amount:.2f}"])
+
+    charges.append(['', ''])
+    total_exp = sum(e.amount for e in expenses) if expenses else 0.0
+    total_charges = trip.total_fare + total_exp
+    charges.append(['Total', f"{total_charges:.2f}"])
+
+    tc = Table(charges, hAlign='LEFT', colWidths=[350, 120])
+    tc.setStyle(TableStyle([
+        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+        ('BACKGROUND',(0,0),(-1,0),colors.lightgrey),
+        ('ALIGN',(1,0),(-1,-1),'RIGHT')
+    ]))
+    elems.append(tc)
+    elems.append(Spacer(1, 12))
+
+    # Payments
+    pay_rows = [['Payment ID', 'Method', 'Amount (₹)', 'Date']]
+    for p in payments:
+        pay_rows.append([p.gateway_payment_id or p.id, p.method, f"{p.amount:.2f}", p.timestamp.strftime('%Y-%m-%d')])
+    pay_table = Table(pay_rows, hAlign='LEFT', colWidths=[180,120,120,150])
+    pay_table.setStyle(TableStyle([('GRID', (0,0), (-1,-1), 0.5, colors.grey), ('BACKGROUND',(0,0),(-1,0),colors.lightgrey), ('ALIGN',(2,1),(-1,-1),'RIGHT')]))
+    elems.append(Paragraph('Payments', styles['h4']))
+    elems.append(pay_table)
+    elems.append(Spacer(1, 12))
+
+    # Summary
+    total_paid = sum(p.amount for p in payments) if payments else 0.0
+    balance = total_charges - total_paid
+    summary = [['Total Charges', f"{total_charges:.2f}"], ['Total Paid', f"{total_paid:.2f}"], ['Balance', f"{balance:.2f}"]] 
+    sum_table = Table(summary, hAlign='RIGHT', colWidths=[200,120])
+    sum_table.setStyle(TableStyle([('GRID',(0,0),(-1,-1),0.5,colors.grey), ('BACKGROUND',(0,0),(-1,0),colors.whitesmoke), ('ALIGN',(1,0),(-1,-1),'RIGHT')]))
+    elems.append(sum_table)
+
+    doc.build(elems)
+    buffer.seek(0)
+    filename = f"invoice_{trip.id}.pdf"
+    return send_file(buffer, as_attachment=True, download_name=filename, mimetype='application/pdf')
 
 @app.route('/update_distance/<trip_id>', methods=['GET', 'POST'])
 @login_required

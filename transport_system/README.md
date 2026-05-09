@@ -78,6 +78,48 @@ set GOOGLE_MAPS_API_KEY=your_api_key_here
 echo GOOGLE_MAPS_API_KEY=your_api_key_here > .env
 ```
 
+### 6.a Razorpay (Optional)
+
+If you use Razorpay payments, set these environment variables:
+
+```bash
+# Windows
+set RAZORPAY_KEY_ID=your_key_id
+set RAZORPAY_KEY_SECRET=your_key_secret
+set RAZORPAY_WEBHOOK_SECRET=your_webhook_secret
+
+# Or in .env file
+echo RAZORPAY_KEY_ID=your_key_id >> .env
+echo RAZORPAY_KEY_SECRET=your_key_secret >> .env
+echo RAZORPAY_WEBHOOK_SECRET=your_webhook_secret >> .env
+```
+
+The app will initialize the Razorpay client automatically if both `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` are present.
+
+### 6.b Seed an Admin User (Optional)
+
+You can register via the web UI (`/register`) or seed an admin user from the Python REPL:
+
+```bash
+python -c "from main import app, db, hash_password; from models import User; \
+with app.app_context(): u=User(username='admin', password=hash_password('admin123'), name='Admin', role='admin'); db.session.add(u); db.session.commit(); print('Created admin')"
+```
+
+Use a strong password in production and remove this snippet when done.
+
+### 7. Testing & Runtime Fixes
+
+- The app includes small runtime helpers (upload folder, file type check, audit log, and summary update helpers) to avoid NameError crashes during development.
+- If you hit errors, restart the dev server and check the Flask debug console for tracebacks.
+- To run the app locally:
+
+```bash
+python main.py
+```
+
+Open http://localhost:5000 and register/login.
+
+
 ### 7. Run the App
 ```bash
 python main.py

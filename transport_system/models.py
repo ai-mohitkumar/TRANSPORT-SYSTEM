@@ -83,6 +83,11 @@ class Payment(db.Model):
     amount = db.Column(db.Float, default=0.0)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     method = db.Column(db.String(20), default='cash')
+    # Payment gateway integration fields
+    gateway = db.Column(db.String(50), default='')
+    gateway_order_id = db.Column(db.String(100))
+    gateway_payment_id = db.Column(db.String(100))
+    payment_status = db.Column(db.String(20), default='Pending')
 
 class Expense(db.Model):
     __tablename__ = 'expenses'
@@ -142,3 +147,18 @@ class Rating(db.Model):
     review = db.Column(db.Text)
     rated_by = db.Column(db.String(80))
     rated_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class WebhookEvent(db.Model):
+    __tablename__ = 'webhook_events'
+    id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
+    provider = db.Column(db.String(50), nullable=False)
+    event_type = db.Column(db.String(100))
+    event_hash = db.Column(db.String(128), unique=True, nullable=False)
+    payload = db.Column(db.Text)
+    signature = db.Column(db.String(255))
+    status = db.Column(db.String(20), default='received')
+    attempts = db.Column(db.Integer, default=0)
+    error = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    processed_at = db.Column(db.DateTime)

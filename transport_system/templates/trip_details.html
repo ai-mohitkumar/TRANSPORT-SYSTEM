@@ -3,12 +3,15 @@
 {% block title %}Trip Details - KALAWATI TRANSPORT{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center">
-            <h2 class="mb-0">
+<div class="page-header d-print-none mb-4">
+    <div class="row align-items-center">
+        <div class="col">
+            <h2 class="page-title">
                 <i class="fas fa-route me-2"></i>Trip Details
             </h2>
+            <div class="page-subtitle text-muted">Manage trip, payments and expenses</div>
+        </div>
+        <div class="col-auto">
             <a href="{{ url_for('trips') }}" class="btn btn-outline-secondary">
                 <i class="fas fa-arrow-left me-2"></i>Back to Trips
             </a>
@@ -27,6 +30,7 @@
                 </span>
             </div>
             <div class="card-body">
+                <div class="card-status bg-info"></div>
                 <div class="row">
                     <div class="col-md-6">
                         <p><strong>Trip ID:</strong> <code>{{ trip.id }}</code></p>
@@ -156,7 +160,7 @@
                 <h5 class="mb-0">Quick Actions</h5>
             </div>
             <div class="card-body">
-                <div class="d-grid gap-2">
+                <div class="d-flex flex-column gap-2">
                     <a href="{{ url_for('edit_trip', trip_id=trip.id) }}" class="btn btn-outline-warning">
                         <i class="fas fa-edit me-2"></i>Edit Trip
                     </a>
@@ -186,7 +190,18 @@
                     <a href="{{ url_for('add_payment', trip_id=trip.id) }}" class="btn btn-outline-primary">
                         <i class="fas fa-money-bill-wave me-2"></i>Add Payment
                     </a>
+                    {% set paid = db.session.query(db.func.sum(Payment.amount)).filter_by(trip_id=trip.id).scalar() or 0.0 %}
+                    {% set remaining = (trip.total_fare - paid) %}
+                    {% if remaining > 0 %}
+                    <button class="btn btn-success w-100" onclick="payNow('{{ trip.id }}')" data-trip="{{ trip.id }}">
+                        <i class="fas fa-credit-card me-2"></i>Pay Online
+                    </button>
                     {% endif %}
+                    {% endif %}
+
+                    <a href="{{ url_for('download_invoice', trip_id=trip.id) }}" class="btn btn-outline-secondary w-100">
+                        <i class="fas fa-file-pdf me-2"></i>Download Invoice (PDF)
+                    </a>
 
                     <a href="{{ url_for('add_expense', trip_id=trip.id) }}" class="btn btn-outline-warning">
                         <i class="fas fa-money-bill-wave me-2"></i>Add Expense
@@ -296,4 +311,35 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+async function payNow(tripId) {
+    const resp = await fetch(`/create-payment/${tripId}`, { method: 'POST' });
+    const data = await resp.json();
+    if (data.error) { alert(data.error); return; }
+
+    const options = {
+        key: data.key,
+        amount: data.amount,
+        currency: 'INR',
+        order_id: data.order_id,
+        name: 'Kalawati Transport',
+        description: 'Trip Payment',
+        handler: function (response) {
+            // include trip id so server can reconcile
+            response.trip_id = data.trip_id;
+            fetch('/verify-payment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(response)
+            }).then(r => r.json()).then(j => { if (j.success) location.reload(); else alert(JSON.stringify(j)); });
+        }
+    };
+    const rzp = new Razorpay(options);
+    rzp.open();
+}
+</script>
 {% endblock %}

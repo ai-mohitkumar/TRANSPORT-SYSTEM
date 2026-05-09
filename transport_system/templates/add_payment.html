@@ -3,12 +3,15 @@
 {% block title %}Add Payment - KALAWATI TRANSPORT{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <h2 class="mb-4">
-            <i class="fas fa-money-bill-wave me-2"></i>Add Payment
-        </h2>
+<div class="page-header d-print-none">
+  <div class="row align-items-center">
+    <div class="col">
+      <h2 class="page-title">
+        <i class="fas fa-money-bill-wave me-2"></i>Add Payment
+      </h2>
+      <div class="page-subtitle text-muted">Record a payment or view recent transactions</div>
     </div>
+  </div>
 </div>
 
 <div class="row">
@@ -18,7 +21,8 @@
                 <h5 class="mb-0">Payment Details</h5>
             </div>
             <div class="card-body">
-                <div class="alert alert-info">
+                <div class="card-status bg-info"></div>
+                <div class="mb-3">
                     <strong>Trip:</strong> {{ trip.customer_name }} ({{ trip.pickup }} → {{ trip.destination }})<br>
                     <strong>Total Fare:</strong> ₹{{ trip.total_fare }}<br>
                     <strong>Already Paid:</strong> ₹{{ trip.payments|sum(attribute='amount') }}<br>
@@ -40,8 +44,8 @@
                                placeholder="Enter payment amount" required>
                     </div>
 
-                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                        <a href="{{ url_for('trip_details', trip_id=trip.id) }}" class="btn btn-outline-secondary me-md-2">
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{{ url_for('trip_details', trip_id=trip.id) }}" class="btn btn-outline-secondary">
                             <i class="fas fa-times me-2"></i>Cancel
                         </a>
                         <button type="submit" class="btn btn-success">
